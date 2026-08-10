@@ -21,6 +21,17 @@ type Wall = {
   direction: "horizontal" | "vertical";
 };
 
+type Door = {
+  id: number;
+  name: string;
+  width: number;
+  x: number;
+  y: number;
+  type: "Interior" | "Exterior";
+  swing: "Left" | "Right";
+  direction: "horizontal" | "vertical";
+};
+
 const roomTypes = [
   "Living Room",
   "Bedroom",
@@ -54,11 +65,33 @@ export default function FloorPlanPage() {
     },
   ]);
 
+  const [doors, setDoors] = useState<Door[]>([]);
+
   const [selectedId, setSelectedId] = useState<number | null>(1);
   const [selectedWallId, setSelectedWallId] = useState<number | null>(null);
+  const [selectedDoorId, setSelectedDoorId] = useState<number | null>(null);
 
   const selectedRoom = rooms.find((room) => room.id === selectedId);
   const selectedWall = walls.find((wall) => wall.id === selectedWallId);
+  const selectedDoor = doors.find((door) => door.id === selectedDoorId);
+
+  function selectRoom(id: number) {
+    setSelectedId(id);
+    setSelectedWallId(null);
+    setSelectedDoorId(null);
+  }
+
+  function selectWall(id: number) {
+    setSelectedId(null);
+    setSelectedWallId(id);
+    setSelectedDoorId(null);
+  }
+
+  function selectDoor(id: number) {
+    setSelectedId(null);
+    setSelectedWallId(null);
+    setSelectedDoorId(id);
+  }
 
   function addRoom(name: string) {
     const newRoom: Room = {
@@ -71,8 +104,7 @@ export default function FloorPlanPage() {
     };
 
     setRooms((current) => [...current, newRoom]);
-    setSelectedId(newRoom.id);
-    setSelectedWallId(null);
+    selectRoom(newRoom.id);
   }
 
   function removeRoom(id: number) {
@@ -129,8 +161,7 @@ export default function FloorPlanPage() {
     };
 
     setWalls((current) => [...current, newWall]);
-    setSelectedWallId(newWall.id);
-    setSelectedId(null);
+    selectWall(newWall.id);
   }
 
   function removeWall(id: number) {
@@ -162,6 +193,65 @@ export default function FloorPlanPage() {
     );
   }
 
+  function addDoor(
+    type: "Interior" | "Exterior",
+    direction: "horizontal" | "vertical"
+  ) {
+    const newDoor: Door = {
+      id: Date.now(),
+      name: `${type} Door`,
+      width: 0.9,
+      x: 220 + doors.length * 30,
+      y: 100 + doors.length * 30,
+      type,
+      swing: "Right",
+      direction,
+    };
+
+    setDoors((current) => [...current, newDoor]);
+    selectDoor(newDoor.id);
+  }
+
+  function removeDoor(id: number) {
+    setDoors((current) => current.filter((door) => door.id !== id));
+
+    if (selectedDoorId === id) {
+      setSelectedDoorId(null);
+    }
+  }
+
+  function updateSelectedDoor(
+    property: "width" | "swing" | "type",
+    value: number | string
+  ) {
+    if (!selectedDoorId) return;
+
+    setDoors((current) =>
+      current.map((door) => {
+        if (door.id !== selectedDoorId) return door;
+
+        if (property === "width") {
+          return {
+            ...door,
+            width: Math.max(0.6, Number(value)),
+          };
+        }
+
+        if (property === "swing") {
+          return {
+            ...door,
+            swing: value as "Left" | "Right",
+          };
+        }
+
+        return {
+          ...door,
+          type: value as "Interior" | "Exterior",
+        };
+      })
+    );
+  }
+
   const totalArea = rooms.reduce(
     (total, room) => total + room.width * room.height,
     0
@@ -188,7 +278,6 @@ export default function FloorPlanPage() {
       </header>
 
       <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-        {/* Heading */}
         <div className="mb-6">
           <p className="text-sm font-semibold uppercase tracking-wider text-green-600">
             Home Designer
@@ -199,8 +288,8 @@ export default function FloorPlanPage() {
           </h1>
 
           <p className="mt-2 max-w-2xl text-gray-600">
-            Create rooms and walls now. Doors, windows and detailed
-            measurements will connect to this system next.
+            Create rooms, walls and doors as the foundation of your
+            home design.
           </p>
         </div>
 
@@ -242,46 +331,72 @@ export default function FloorPlanPage() {
             </div>
 
             <div className="mt-7 border-t pt-5">
-              <h2 className="font-semibold">Rooms</h2>
+              <h2 className="font-semibold">Add doors</h2>
+
+              <div className="mt-4 space-y-2">
+                <button
+                  onClick={() =>
+                    addDoor("Interior", "horizontal")
+                  }
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
+                >
+                  + Interior door
+                </button>
+
+                <button
+                  onClick={() =>
+                    addDoor("Exterior", "horizontal")
+                  }
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
+                >
+                  + Exterior door
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-7 border-t pt-5">
+              <h2 className="font-semibold">Elements</h2>
 
               <div className="mt-3 space-y-2">
                 {rooms.map((room) => (
                   <button
                     key={room.id}
-                    onClick={() => {
-                      setSelectedId(room.id);
-                      setSelectedWallId(null);
-                    }}
+                    onClick={() => selectRoom(room.id)}
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
                       selectedId === room.id
                         ? "bg-green-100 font-semibold text-green-800"
                         : "bg-gray-50 hover:bg-gray-100"
                     }`}
                   >
-                    {room.name}
+                    🛏️ {room.name}
                   </button>
                 ))}
-              </div>
-            </div>
 
-            <div className="mt-6 border-t pt-5">
-              <h2 className="font-semibold">Walls</h2>
-
-              <div className="mt-3 space-y-2">
                 {walls.map((wall) => (
                   <button
                     key={wall.id}
-                    onClick={() => {
-                      setSelectedWallId(wall.id);
-                      setSelectedId(null);
-                    }}
+                    onClick={() => selectWall(wall.id)}
                     className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
                       selectedWallId === wall.id
                         ? "bg-green-100 font-semibold text-green-800"
                         : "bg-gray-50 hover:bg-gray-100"
                     }`}
                   >
-                    {wall.name}
+                    🧱 {wall.name}
+                  </button>
+                ))}
+
+                {doors.map((door) => (
+                  <button
+                    key={door.id}
+                    onClick={() => selectDoor(door.id)}
+                    className={`w-full rounded-lg px-3 py-2 text-left text-sm ${
+                      selectedDoorId === door.id
+                        ? "bg-green-100 font-semibold text-green-800"
+                        : "bg-gray-50 hover:bg-gray-100"
+                    }`}
+                  >
+                    🚪 {door.name}
                   </button>
                 ))}
               </div>
@@ -295,12 +410,13 @@ export default function FloorPlanPage() {
                 <h2 className="font-semibold">Floor plan canvas</h2>
 
                 <p className="text-xs text-gray-500">
-                  Select a room or wall to edit it
+                  Select an element to edit it
                 </p>
               </div>
 
               <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium">
-                {rooms.length} rooms · {walls.length} walls
+                {rooms.length} rooms · {walls.length} walls ·{" "}
+                {doors.length} doors
               </div>
             </div>
 
@@ -316,16 +432,13 @@ export default function FloorPlanPage() {
                 {/* Walls */}
                 {walls.map((wall) => {
                   const isSelected = wall.id === selectedWallId;
-
-                  const horizontal = wall.direction === "horizontal";
+                  const horizontal =
+                    wall.direction === "horizontal";
 
                   return (
                     <button
                       key={wall.id}
-                      onClick={() => {
-                        setSelectedWallId(wall.id);
-                        setSelectedId(null);
-                      }}
+                      onClick={() => selectWall(wall.id)}
                       aria-label={wall.name}
                       className={`absolute rounded-sm transition ${
                         isSelected
@@ -353,10 +466,7 @@ export default function FloorPlanPage() {
                   return (
                     <button
                       key={room.id}
-                      onClick={() => {
-                        setSelectedId(room.id);
-                        setSelectedWallId(null);
-                      }}
+                      onClick={() => selectRoom(room.id)}
                       className={`absolute flex flex-col items-center justify-center rounded-lg border-2 text-center transition ${
                         isSelected
                           ? "border-green-600 bg-green-100 shadow-lg"
@@ -379,6 +489,40 @@ export default function FloorPlanPage() {
                     </button>
                   );
                 })}
+
+                {/* Doors */}
+                {doors.map((door) => {
+                  const isSelected = door.id === selectedDoorId;
+                  const horizontal =
+                    door.direction === "horizontal";
+
+                  return (
+                    <button
+                      key={door.id}
+                      onClick={() => selectDoor(door.id)}
+                      aria-label={door.name}
+                      className={`absolute z-20 ${
+                        isSelected
+                          ? "bg-green-600"
+                          : "bg-amber-600"
+                      }`}
+                      style={{
+                        left: door.x,
+                        top: door.y,
+                        width: horizontal
+                          ? door.width * 35
+                          : 10,
+                        height: horizontal
+                          ? 10
+                          : door.width * 35,
+                      }}
+                    >
+                      <span className="sr-only">
+                        {door.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -387,6 +531,7 @@ export default function FloorPlanPage() {
           <aside className="rounded-2xl border bg-white p-5 shadow-sm">
             <h2 className="font-semibold">Properties</h2>
 
+            {/* ROOM */}
             {selectedRoom && (
               <>
                 <div className="mt-5">
@@ -439,44 +584,6 @@ export default function FloorPlanPage() {
                   </label>
                 </div>
 
-                <div className="mt-6">
-                  <p className="text-sm font-medium">Move room</p>
-
-                  <div className="mt-3 grid grid-cols-3 gap-2">
-                    <div />
-
-                    <button
-                      onClick={() => moveSelected(0, -20)}
-                      className="rounded-lg border py-2 hover:bg-gray-50"
-                    >
-                      ↑
-                    </button>
-
-                    <div />
-
-                    <button
-                      onClick={() => moveSelected(-20, 0)}
-                      className="rounded-lg border py-2 hover:bg-gray-50"
-                    >
-                      ←
-                    </button>
-
-                    <button
-                      onClick={() => moveSelected(0, 20)}
-                      className="rounded-lg border py-2 hover:bg-gray-50"
-                    >
-                      ↓
-                    </button>
-
-                    <button
-                      onClick={() => moveSelected(20, 0)}
-                      className="rounded-lg border py-2 hover:bg-gray-50"
-                    >
-                      →
-                    </button>
-                  </div>
-                </div>
-
                 <button
                   onClick={() => removeRoom(selectedRoom.id)}
                   className="mt-6 w-full rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100"
@@ -486,6 +593,7 @@ export default function FloorPlanPage() {
               </>
             )}
 
+            {/* WALL */}
             {selectedWall && (
               <>
                 <div className="mt-5">
@@ -548,11 +656,101 @@ export default function FloorPlanPage() {
               </>
             )}
 
-            {!selectedRoom && !selectedWall && (
-              <p className="mt-5 text-sm leading-6 text-gray-500">
-                Select a room or wall to edit its properties.
-              </p>
+            {/* DOOR */}
+            {selectedDoor && (
+              <>
+                <div className="mt-5">
+                  <p className="text-sm text-gray-500">
+                    Selected door
+                  </p>
+
+                  <p className="mt-1 font-semibold">
+                    {selectedDoor.name}
+                  </p>
+                </div>
+
+                <div className="mt-6 space-y-4">
+                  <label className="block">
+                    <span className="text-sm font-medium">
+                      Door type
+                    </span>
+
+                    <select
+                      value={selectedDoor.type}
+                      onChange={(e) =>
+                        updateSelectedDoor(
+                          "type",
+                          e.target.value
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2"
+                    >
+                      <option value="Interior">
+                        Interior
+                      </option>
+                      <option value="Exterior">
+                        Exterior
+                      </option>
+                    </select>
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium">
+                      Width (m)
+                    </span>
+
+                    <input
+                      type="number"
+                      min="0.6"
+                      step="0.1"
+                      value={selectedDoor.width}
+                      onChange={(e) =>
+                        updateSelectedDoor(
+                          "width",
+                          Number(e.target.value)
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2"
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="text-sm font-medium">
+                      Swing
+                    </span>
+
+                    <select
+                      value={selectedDoor.swing}
+                      onChange={(e) =>
+                        updateSelectedDoor(
+                          "swing",
+                          e.target.value
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2"
+                    >
+                      <option value="Left">Left</option>
+                      <option value="Right">Right</option>
+                    </select>
+                  </label>
+                </div>
+
+                <button
+                  onClick={() => removeDoor(selectedDoor.id)}
+                  className="mt-6 w-full rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100"
+                >
+                  Delete door
+                </button>
+              </>
             )}
+
+            {!selectedRoom &&
+              !selectedWall &&
+              !selectedDoor && (
+                <p className="mt-5 text-sm leading-6 text-gray-500">
+                  Select a room, wall or door to edit its properties.
+                </p>
+              )}
 
             {/* Statistics */}
             <div className="mt-8 border-t pt-6">
@@ -570,6 +768,14 @@ export default function FloorPlanPage() {
 
               <p className="mt-1 text-2xl font-bold">
                 {totalWallLength.toFixed(1)} m
+              </p>
+
+              <p className="mt-5 text-sm text-gray-500">
+                Doors
+              </p>
+
+              <p className="mt-1 text-2xl font-bold">
+                {doors.length}
               </p>
             </div>
           </aside>
