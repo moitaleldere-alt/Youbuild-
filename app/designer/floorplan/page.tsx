@@ -451,7 +451,9 @@ export default function FloorplanDesigner() {
         </div>
 
         <div className="grid gap-6 lg:grid-cols-[260px_1fr_270px]">
+
           {/* LEFT PANEL */}
+
           <aside className="rounded-2xl border bg-white p-5 shadow-sm">
             <h2 className="font-semibold">
               Rooms
@@ -557,6 +559,7 @@ export default function FloorplanDesigner() {
           </aside>
 
           {/* CANVAS */}
+
           <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
             <div className="flex items-center justify-between border-b px-5 py-4">
               <div>
@@ -587,44 +590,100 @@ export default function FloorplanDesigner() {
                     "20px 20px",
                 }}
               >
+
                 {/* ROOMS */}
+
                 {rooms.map((room) => {
                   const isSelected =
                     room.id === selectedId;
 
+                  const roomWidth =
+                    room.width * 35;
+
+                  const roomHeight =
+                    room.height * 30;
+
                   return (
-                    <button
-                      key={room.id}
-                      onClick={() =>
-                        selectRoom(room.id)
-                      }
-                      className={`absolute flex flex-col items-center justify-center rounded-lg border-2 text-center ${
-                        isSelected
-                          ? "border-green-600 bg-green-100 shadow-lg"
-                          : "border-gray-500 bg-white"
-                      }`}
+                    <div
+                      key={`room-group-${room.id}`}
+                      className="absolute"
                       style={{
                         left: room.x,
                         top: room.y,
-                        width:
-                          room.width * 35,
-                        height:
-                          room.height * 30,
+                        width: roomWidth,
+                        height: roomHeight,
                       }}
                     >
-                      <span className="text-sm font-semibold">
-                        {room.name}
-                      </span>
 
-                      <span className="mt-1 text-xs text-gray-500">
-                        {room.width}m ×{" "}
-                        {room.height}m
-                      </span>
-                    </button>
+                      {/* ROOM */}
+
+                      <button
+                        onClick={() =>
+                          selectRoom(room.id)
+                        }
+                        className={`absolute inset-0 flex flex-col items-center justify-center rounded-lg border-2 text-center ${
+                          isSelected
+                            ? "border-green-600 bg-green-100 shadow-lg"
+                            : "border-gray-500 bg-white"
+                        }`}
+                      >
+                        <span className="text-sm font-semibold">
+                          {room.name}
+                        </span>
+
+                        <span className="mt-1 text-xs text-gray-500">
+                          {room.width}m ×{" "}
+                          {room.height}m
+                        </span>
+                      </button>
+
+                      {/* ROOM WIDTH DIMENSION */}
+
+                      <div
+                        className="pointer-events-none absolute z-40 flex items-center justify-center"
+                        style={{
+                          left: 0,
+                          top: -24,
+                          width: roomWidth,
+                        }}
+                      >
+                        <div className="relative w-full border-t border-gray-600">
+                          <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-white px-1 text-[10px] font-semibold text-gray-700">
+                            {room.width} m
+                          </span>
+
+                          <span className="absolute -left-1 -top-1 h-2 w-2 border-l border-t border-gray-600 rotate-45" />
+
+                          <span className="absolute -right-1 -top-1 h-2 w-2 border-r border-t border-gray-600 rotate-45" />
+                        </div>
+                      </div>
+
+                      {/* ROOM HEIGHT DIMENSION */}
+
+                      <div
+                        className="pointer-events-none absolute z-40 flex items-center"
+                        style={{
+                          left: -32,
+                          top: 0,
+                          height: roomHeight,
+                        }}
+                      >
+                        <div className="relative h-full border-l border-gray-600">
+                          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90 whitespace-nowrap bg-white px-1 text-[10px] font-semibold text-gray-700">
+                            {room.height} m
+                          </span>
+
+                          <span className="absolute -left-1 -top-1 h-2 w-2 border-l border-t border-gray-600 rotate-45" />
+
+                          <span className="absolute -bottom-1 -left-1 h-2 w-2 border-l border-bottom border-gray-600 -rotate-45" />
+                        </div>
+                      </div>
+                    </div>
                   );
                 })}
 
                 {/* WALLS */}
+
                 {walls.map((wall) => {
                   const isSelected =
                     wall.id ===
@@ -634,32 +693,87 @@ export default function FloorplanDesigner() {
                     wall.direction ===
                     "horizontal";
 
+                  const wallLength =
+                    wall.length * 35;
+
                   return (
-                    <button
-                      key={wall.id}
-                      onClick={() =>
-                        selectWall(wall.id)
-                      }
-                      className={`absolute z-10 rounded-sm ${
-                        isSelected
-                          ? "bg-green-600 shadow-lg"
-                          : "bg-gray-800"
-                      }`}
+                    <div
+                      key={`wall-group-${wall.id}`}
+                      className="absolute"
                       style={{
                         left: wall.x,
                         top: wall.y,
                         width: horizontal
-                          ? wall.length * 35
-                          : 8,
+                          ? wallLength
+                          : 40,
                         height: horizontal
-                          ? 8
-                          : wall.length * 35,
+                          ? 40
+                          : wallLength,
                       }}
-                    />
+                    >
+
+                      {/* WALL */}
+
+                      <button
+                        onClick={() =>
+                          selectWall(wall.id)
+                        }
+                        className={`absolute z-10 rounded-sm ${
+                          isSelected
+                            ? "bg-green-600 shadow-lg"
+                            : "bg-gray-800"
+                        }`}
+                        style={{
+                          left: 0,
+                          top: 0,
+                          width: horizontal
+                            ? wallLength
+                            : 8,
+                          height: horizontal
+                            ? 8
+                            : wallLength,
+                        }}
+                      />
+
+                      {/* WALL DIMENSION */}
+
+                      {horizontal ? (
+                        <div
+                          className="pointer-events-none absolute z-40"
+                          style={{
+                            left: 0,
+                            top: -16,
+                            width: wallLength,
+                          }}
+                        >
+                          <div className="relative border-t border-gray-600">
+                            <span className="absolute left-1/2 -top-3 -translate-x-1/2 bg-white px-1 text-[10px] font-semibold text-gray-700">
+                              {wall.length} m
+                            </span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          className="pointer-events-none absolute z-40"
+                          style={{
+                            left: -18,
+                            top: 0,
+                            height: wallLength,
+                          }}
+                        >
+                          <div className="relative h-full border-l border-gray-600">
+                            <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 -rotate-90 whitespace-nowrap bg-white px-1 text-[10px] font-semibold text-gray-700">
+                              {wall.length} m
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
 
                 {/* DOORS */}
+
                 {doors.map((door) => {
                   const wall = walls.find(
                     (item) =>
@@ -681,16 +795,9 @@ export default function FloorplanDesigner() {
                     door.position * 35;
 
                   return (
-                    <button
-                      key={door.id}
-                      onClick={() =>
-                        selectDoor(door.id)
-                      }
-                      className={`absolute z-30 ${
-                        isSelected
-                          ? "bg-green-600"
-                          : "bg-amber-500"
-                      }`}
+                    <div
+                      key={`door-group-${door.id}`}
+                      className="pointer-events-none absolute z-30"
                       style={{
                         left: horizontal
                           ? wall.x + position
@@ -698,18 +805,44 @@ export default function FloorplanDesigner() {
                         top: horizontal
                           ? wall.y
                           : wall.y + position,
-                        width: horizontal
-                          ? door.width * 35
-                          : 10,
-                        height: horizontal
-                          ? 10
-                          : door.width * 35,
                       }}
-                    />
+                    >
+                      <button
+                        onClick={() =>
+                          selectDoor(door.id)
+                        }
+                        className={`pointer-events-auto ${
+                          isSelected
+                            ? "bg-green-600"
+                            : "bg-amber-500"
+                        }`}
+                        style={{
+                          width: horizontal
+                            ? door.width * 35
+                            : 10,
+                          height: horizontal
+                            ? 10
+                            : door.width * 35,
+                        }}
+                      />
+
+                      {/* DOOR MEASUREMENT */}
+
+                      <span
+                        className={`absolute whitespace-nowrap rounded bg-white px-1 text-[9px] font-semibold text-gray-700 shadow-sm ${
+                          horizontal
+                            ? "-top-5 left-1/2 -translate-x-1/2"
+                            : "left-4 top-1/2 -translate-y-1/2"
+                        }`}
+                      >
+                        {door.width} m
+                      </span>
+                    </div>
                   );
                 })}
 
                 {/* WINDOWS */}
+
                 {windows.map((window) => {
                   const wall = walls.find(
                     (item) =>
@@ -731,21 +864,9 @@ export default function FloorplanDesigner() {
                     window.position * 35;
 
                   return (
-                    <button
-                      key={window.id}
-                      onClick={() =>
-                        selectWindow(
-                          window.id
-                        )
-                      }
-                      aria-label={
-                        window.name
-                      }
-                      className={`absolute z-20 ${
-                        isSelected
-                          ? "bg-green-600"
-                          : "bg-blue-500"
-                      }`}
+                    <div
+                      key={`window-group-${window.id}`}
+                      className="pointer-events-none absolute z-20"
                       style={{
                         left: horizontal
                           ? wall.x + position
@@ -753,18 +874,48 @@ export default function FloorplanDesigner() {
                         top: horizontal
                           ? wall.y
                           : wall.y + position,
-                        width: horizontal
-                          ? window.width * 35
-                          : 8,
-                        height: horizontal
-                          ? 8
-                          : window.width * 35,
                       }}
                     >
-                      <span className="sr-only">
-                        {window.name}
+                      <button
+                        onClick={() =>
+                          selectWindow(
+                            window.id
+                          )
+                        }
+                        aria-label={
+                          window.name
+                        }
+                        className={`pointer-events-auto ${
+                          isSelected
+                            ? "bg-green-600"
+                            : "bg-blue-500"
+                        }`}
+                        style={{
+                          width: horizontal
+                            ? window.width * 35
+                            : 8,
+                          height: horizontal
+                            ? 8
+                            : window.width * 35,
+                        }}
+                      >
+                        <span className="sr-only">
+                          {window.name}
+                        </span>
+                      </button>
+
+                      {/* WINDOW MEASUREMENT */}
+
+                      <span
+                        className={`absolute whitespace-nowrap rounded bg-white px-1 text-[9px] font-semibold text-gray-700 shadow-sm ${
+                          horizontal
+                            ? "-top-5 left-1/2 -translate-x-1/2"
+                            : "left-4 top-1/2 -translate-y-1/2"
+                        }`}
+                      >
+                        {window.width} m
                       </span>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
@@ -772,6 +923,7 @@ export default function FloorplanDesigner() {
           </section>
 
           {/* PROPERTIES */}
+
           <aside className="rounded-2xl border bg-white p-5 shadow-sm">
             <h2 className="font-semibold">
               Properties
@@ -1017,6 +1169,7 @@ export default function FloorplanDesigner() {
                       <option value="Interior">
                         Interior
                       </option>
+
                       <option value="Exterior">
                         Exterior
                       </option>
@@ -1067,6 +1220,7 @@ export default function FloorplanDesigner() {
                       <option value="Left">
                         Left
                       </option>
+
                       <option value="Right">
                         Right
                       </option>
@@ -1148,6 +1302,8 @@ export default function FloorplanDesigner() {
                 </p>
               )}
 
+            {/* MEASUREMENT SUMMARY */}
+
             <div className="mt-7 border-t pt-5">
               <p className="text-sm text-gray-500">
                 Floor area
@@ -1170,6 +1326,7 @@ export default function FloorplanDesigner() {
                   <p className="text-lg font-bold">
                     {doors.length}
                   </p>
+
                   <p className="text-xs text-gray-500">
                     Doors
                   </p>
@@ -1179,6 +1336,7 @@ export default function FloorplanDesigner() {
                   <p className="text-lg font-bold">
                     {windows.length}
                   </p>
+
                   <p className="text-xs text-gray-500">
                     Windows
                   </p>
