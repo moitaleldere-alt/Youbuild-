@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 
 type Room = {
   id: number;
@@ -52,27 +52,6 @@ type MaterialPrice = {
   window: number;
 };
 
-type Project = {
-  id: number;
-  name: string;
-  location: string;
-  houseType: string;
-  notes: string;
-  createdAt: string;
-  updatedAt: string;
-
-  rooms: Room[];
-  walls: Wall[];
-  doors: Door[];
-  windows: Window[];
-
-  prices: MaterialPrice;
-
-  wastePercent: number;
-  transportPercent: number;
-  labourPercent: number;
-};
-
 const roomTypes = [
   "Living Room",
   "Bedroom",
@@ -80,15 +59,6 @@ const roomTypes = [
   "Bathroom",
   "Dining Room",
   "Garage",
-];
-
-const houseTypes = [
-  "Bungalow",
-  "Maisonette",
-  "Apartment",
-  "Villa",
-  "Townhouse",
-  "Custom",
 ];
 
 const defaultPrices: MaterialPrice = {
@@ -104,7 +74,56 @@ const defaultPrices: MaterialPrice = {
   window: 8500,
 };
 
-const STORAGE_KEY = "youbuild-projects-v5";
+const stageDefinitions = [
+  {
+    name: "Foundation",
+    percentage: 15,
+    duration: 3,
+    icon: "🧱",
+  },
+  {
+    name: "Walls",
+    percentage: 20,
+    duration: 5,
+    icon: "🏗️",
+  },
+  {
+    name: "Roofing",
+    percentage: 15,
+    duration: 4,
+    icon: "🏠",
+  },
+  {
+    name: "Doors & Windows",
+    percentage: 10,
+    duration: 2,
+    icon: "🚪",
+  },
+  {
+    name: "Flooring",
+    percentage: 10,
+    duration: 3,
+    icon: "▦",
+  },
+  {
+    name: "Electrical",
+    percentage: 10,
+    duration: 3,
+    icon: "⚡",
+  },
+  {
+    name: "Plumbing",
+    percentage: 8,
+    duration: 3,
+    icon: "🚿",
+  },
+  {
+    name: "Finishing",
+    percentage: 12,
+    duration: 5,
+    icon: "🎨",
+  },
+];
 
 export default function FloorplanDesigner() {
   const [rooms, setRooms] = useState<Room[]>([
@@ -148,61 +167,14 @@ export default function FloorplanDesigner() {
   const [transportPercent, setTransportPercent] = useState(7);
   const [labourPercent, setLabourPercent] = useState(30);
 
-  /*
-   * ==========================================
-   * MILESTONE 5
-   * PROJECT MANAGEMENT
-   * ==========================================
-   */
+  /* =========================
+     MILESTONE 6 SETTINGS
+  ========================= */
 
-  const [projectName, setProjectName] =
-    useState("My YouBuild Project");
-
-  const [projectLocation, setProjectLocation] =
-    useState("Kenya");
-
-  const [houseType, setHouseType] =
-    useState("Bungalow");
-
-  const [projectNotes, setProjectNotes] =
-    useState("");
-
-  const [savedProjects, setSavedProjects] =
-    useState<Project[]>([]);
-
-  const [showProjectPanel, setShowProjectPanel] =
-    useState(false);
-
-  const [showSavedProjects, setShowSavedProjects] =
-    useState(false);
-
-  const [saveMessage, setSaveMessage] =
-    useState("");
-
-  /*
-   * ==========================================
-   * LOAD SAVED PROJECTS
-   * ==========================================
-   */
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-
-      if (saved) {
-        const parsed: Project[] = JSON.parse(saved);
-        setSavedProjects(parsed);
-      }
-    } catch {
-      console.error("Could not load saved YouBuild projects.");
-    }
-  }, []);
-
-  /*
-   * ==========================================
-   * SELECTED ELEMENTS
-   * ==========================================
-   */
+  const [budget, setBudget] = useState(5000000);
+  const [contingencyPercent, setContingencyPercent] = useState(10);
+  const [selectedScenario, setSelectedScenario] =
+    useState<"current" | "economy" | "premium">("current");
 
   const selectedRoom = rooms.find(
     (room) => room.id === selectedId
@@ -255,12 +227,6 @@ export default function FloorplanDesigner() {
     setSelectedWindowId(id);
   }
 
-  /*
-   * ==========================================
-   * ROOMS
-   * ==========================================
-   */
-
   function addRoom(name: string) {
     const newRoom: Room = {
       id: Date.now(),
@@ -271,11 +237,7 @@ export default function FloorplanDesigner() {
       y: 100 + rooms.length * 25,
     };
 
-    setRooms((current) => [
-      ...current,
-      newRoom,
-    ]);
-
+    setRooms((current) => [...current, newRoom]);
     selectRoom(newRoom.id);
   }
 
@@ -329,12 +291,6 @@ export default function FloorplanDesigner() {
     );
   }
 
-  /*
-   * ==========================================
-   * WALLS
-   * ==========================================
-   */
-
   function addWall(
     direction: "horizontal" | "vertical"
   ) {
@@ -348,31 +304,21 @@ export default function FloorplanDesigner() {
       direction,
     };
 
-    setWalls((current) => [
-      ...current,
-      newWall,
-    ]);
-
+    setWalls((current) => [...current, newWall]);
     selectWall(newWall.id);
   }
 
   function removeWall(id: number) {
     setWalls((current) =>
-      current.filter(
-        (wall) => wall.id !== id
-      )
+      current.filter((wall) => wall.id !== id)
     );
 
     setDoors((current) =>
-      current.filter(
-        (door) => door.wallId !== id
-      )
+      current.filter((door) => door.wallId !== id)
     );
 
     setWindows((current) =>
-      current.filter(
-        (window) => window.wallId !== id
-      )
+      current.filter((window) => window.wallId !== id)
     );
 
     if (selectedWallId === id) {
@@ -401,12 +347,6 @@ export default function FloorplanDesigner() {
     );
   }
 
-  /*
-   * ==========================================
-   * DOORS
-   * ==========================================
-   */
-
   function addDoor(
     type: "Interior" | "Exterior",
     wallId: number
@@ -430,19 +370,13 @@ export default function FloorplanDesigner() {
       swing: "Right",
     };
 
-    setDoors((current) => [
-      ...current,
-      newDoor,
-    ]);
-
+    setDoors((current) => [...current, newDoor]);
     selectDoor(newDoor.id);
   }
 
   function removeDoor(id: number) {
     setDoors((current) =>
-      current.filter(
-        (door) => door.id !== id
-      )
+      current.filter((door) => door.id !== id)
     );
 
     if (selectedDoorId === id) {
@@ -465,38 +399,25 @@ export default function FloorplanDesigner() {
         if (property === "width") {
           return {
             ...door,
-            width: Math.max(
-              0.6,
-              Number(value)
-            ),
+            width: Math.max(0.6, Number(value)),
           };
         }
 
         if (property === "swing") {
           return {
             ...door,
-            swing:
-              value as "Left" | "Right",
+            swing: value as "Left" | "Right",
           };
         }
 
         return {
           ...door,
-          type:
-            value as
-              | "Interior"
-              | "Exterior",
+          type: value as "Interior" | "Exterior",
           name: `${value} Door`,
         };
       })
     );
   }
-
-  /*
-   * ==========================================
-   * WINDOWS
-   * ==========================================
-   */
 
   function addWindow(wallId: number) {
     const wall = walls.find(
@@ -547,21 +468,12 @@ export default function FloorplanDesigner() {
         window.id === selectedWindowId
           ? {
               ...window,
-              width: Math.max(
-                0.4,
-                value
-              ),
+              width: Math.max(0.4, value),
             }
           : window
       )
     );
   }
-
-  /*
-   * ==========================================
-   * MATERIAL PRICES
-   * ==========================================
-   */
 
   function updatePrice(
     property: keyof MaterialPrice,
@@ -569,23 +481,17 @@ export default function FloorplanDesigner() {
   ) {
     setPrices((current) => ({
       ...current,
-      [property]: Math.max(
-        0,
-        value
-      ),
+      [property]: Math.max(0, value),
     }));
   }
 
-  /*
-   * ==========================================
-   * MEASUREMENTS
-   * ==========================================
-   */
+  /* =========================
+     CORE MEASUREMENTS
+  ========================= */
 
   const totalArea = rooms.reduce(
     (total, room) =>
-      total +
-      room.width * room.height,
+      total + room.width * room.height,
     0
   );
 
@@ -595,124 +501,85 @@ export default function FloorplanDesigner() {
     0
   );
 
-  /*
-   * ==========================================
-   * MILESTONE 4
-   * BUILDING COST CALCULATOR
-   * ==========================================
-   */
+  /* =========================
+     MILESTONE 4
+     COST CALCULATOR
+  ========================= */
 
-  const wallArea =
-    totalWallLength * 3;
+  const wallArea = totalWallLength * 3;
+  const floorArea = totalArea;
+  const roofArea = floorArea * 1.15;
+  const plasterArea = wallArea * 2;
 
-  const floorArea =
-    totalArea;
+  const cementQuantity = Math.max(
+    1,
+    Math.ceil(plasterArea * 0.18)
+  );
 
-  const roofArea =
-    floorArea * 1.15;
+  const blockQuantity = Math.max(
+    1,
+    Math.ceil(wallArea * 12.5)
+  );
 
-  const plasterArea =
-    wallArea * 2;
+  const sandQuantity = Math.max(
+    1,
+    Math.ceil(plasterArea * 0.018)
+  );
 
-  const cementQuantity =
-    Math.max(
-      1,
-      Math.ceil(
-        plasterArea * 0.18
-      )
-    );
+  const ballastQuantity = Math.max(
+    1,
+    Math.ceil(floorArea * 0.08)
+  );
 
-  const blockQuantity =
-    Math.max(
-      1,
-      Math.ceil(
-        wallArea * 12.5
-      )
-    );
+  const steelQuantity = Math.max(
+    1,
+    Math.ceil(floorArea * 4.5)
+  );
 
-  const sandQuantity =
-    Math.max(
-      1,
-      Math.ceil(
-        plasterArea * 0.018
-      )
-    );
+  const roofingQuantity = Math.max(
+    1,
+    Math.ceil(roofArea)
+  );
 
-  const ballastQuantity =
-    Math.max(
-      1,
-      Math.ceil(
-        floorArea * 0.08
-      )
-    );
+  const flooringQuantity = Math.max(
+    1,
+    Math.ceil(floorArea)
+  );
 
-  const steelQuantity =
-    Math.max(
-      1,
-      Math.ceil(
-        floorArea * 4.5
-      )
-    );
-
-  const roofingQuantity =
-    Math.max(
-      1,
-      Math.ceil(roofArea)
-    );
-
-  const flooringQuantity =
-    Math.max(
-      1,
-      Math.ceil(floorArea)
-    );
-
-  const paintQuantity =
-    Math.max(
-      1,
-      Math.ceil(
-        plasterArea / 35
-      )
-    );
+  const paintQuantity = Math.max(
+    1,
+    Math.ceil(plasterArea / 35)
+  );
 
   const cementCost =
-    cementQuantity *
-    prices.cement;
+    cementQuantity * prices.cement;
 
   const blockCost =
-    blockQuantity *
-    prices.blocks;
+    blockQuantity * prices.blocks;
 
   const sandCost =
-    sandQuantity *
-    prices.sand;
+    sandQuantity * prices.sand;
 
   const ballastCost =
-    ballastQuantity *
-    prices.ballast;
+    ballastQuantity * prices.ballast;
 
   const steelCost =
-    steelQuantity *
-    prices.steel;
+    steelQuantity * prices.steel;
 
   const roofingCost =
-    roofingQuantity *
-    prices.roofing;
+    roofingQuantity * prices.roofing;
 
   const flooringCost =
-    flooringQuantity *
-    prices.flooring;
+    flooringQuantity * prices.flooring;
 
   const paintCost =
-    paintQuantity *
-    prices.paint;
+    paintQuantity * prices.paint;
 
   const doorCost =
-    doors.length *
-    prices.door;
+    doors.length * prices.door;
 
   const windowCost =
-    windows.length *
-    prices.window;
+    windows.length * prices.window;
 
   const rawMaterialCost =
     cementCost +
@@ -739,268 +606,167 @@ export default function FloorplanDesigner() {
     (labourPercent / 100);
 
   const materialsSubtotal =
-    rawMaterialCost +
-    wasteCost;
+    rawMaterialCost + wasteCost;
 
   const grandTotal =
     materialsSubtotal +
     transportCost +
     labourCost;
 
+  /* =========================
+     MILESTONE 5
+     DATA ANALYSIS
+  ========================= */
+
   const costPerSquareMeter =
     totalArea > 0
       ? grandTotal / totalArea
       : 0;
 
+  const materialShare =
+    grandTotal > 0
+      ? (rawMaterialCost / grandTotal) * 100
+      : 0;
+
+  const labourShare =
+    grandTotal > 0
+      ? (labourCost / grandTotal) * 100
+      : 0;
+
+  const transportShare =
+    grandTotal > 0
+      ? (transportCost / grandTotal) * 100
+      : 0;
+
+  const wasteShare =
+    grandTotal > 0
+      ? (wasteCost / grandTotal) * 100
+      : 0;
+
+  /* =========================
+     MILESTONE 6
+     SMART PROJECT PLANNER
+  ========================= */
+
+  const contingencyCost =
+    grandTotal *
+    (contingencyPercent / 100);
+
+  const recommendedProjectBudget =
+    grandTotal + contingencyCost;
+
+  const budgetDifference =
+    budget - recommendedProjectBudget;
+
+  const budgetUsedPercent =
+    budget > 0
+      ? (recommendedProjectBudget / budget) *
+        100
+      : 100;
+
+  const budgetHealth =
+    budgetDifference >= 0
+      ? budgetUsedPercent <= 85
+        ? "Healthy"
+        : "Close"
+      : "Over Budget";
+
+  const budgetHealthClass =
+    budgetDifference >= 0
+      ? budgetUsedPercent <= 85
+        ? "bg-green-100 text-green-700"
+        : "bg-amber-100 text-amber-700"
+      : "bg-red-100 text-red-700";
+
+  const totalDuration = stageDefinitions.reduce(
+    (total, stage) =>
+      total + stage.duration,
+    0
+  );
+
+  const readinessScore = useMemo(() => {
+    let score = 45;
+
+    if (rooms.length >= 2) score += 8;
+    if (walls.length >= 4) score += 8;
+    if (doors.length > 0) score += 5;
+    if (windows.length > 0) score += 5;
+    if (totalArea >= 50) score += 5;
+    if (budget > 0) score += 8;
+    if (budgetDifference >= 0) score += 10;
+    if (budgetDifference < 0) score -= 15;
+
+    return Math.max(
+      0,
+      Math.min(100, score)
+    );
+  }, [
+    rooms.length,
+    walls.length,
+    doors.length,
+    windows.length,
+    totalArea,
+    budget,
+    budgetDifference,
+  ]);
+
+  const readinessLabel =
+    readinessScore >= 80
+      ? "Excellent"
+      : readinessScore >= 65
+      ? "Good"
+      : readinessScore >= 50
+      ? "Needs Work"
+      : "Not Ready";
+
+  const scenarioCosts = {
+    economy: grandTotal * 0.85,
+    current: grandTotal,
+    premium: grandTotal * 1.25,
+  };
+
+  const selectedScenarioCost =
+    scenarioCosts[selectedScenario];
+
+  const optimizationItems = [
+    {
+      title: "Flooring",
+      value: flooringCost,
+      suggestion:
+        "Compare local tile, vinyl and polished concrete options before choosing a finish.",
+    },
+    {
+      title: "Roofing",
+      value: roofingCost,
+      suggestion:
+        "Compare roofing systems and suppliers. Roof geometry can strongly affect cost.",
+    },
+    {
+      title: "Blocks",
+      value: blockCost,
+      suggestion:
+        "Compare block sizes, supplier prices and delivery distance.",
+    },
+    {
+      title: "Labour",
+      value: labourCost,
+      suggestion:
+        "Obtain several contractor quotations before locking in labour assumptions.",
+    },
+  ].sort((a, b) => b.value - a.value);
+
   function money(value: number) {
-    return `KSh ${value.toLocaleString(
-      "en-KE",
-      {
-        maximumFractionDigits: 0,
-      }
-    )}`;
+    return `KSh ${Math.round(
+      value
+    ).toLocaleString("en-KE")}`;
   }
-
-  /*
-   * ==========================================
-   * MILESTONE 5
-   * SAVE PROJECT
-   * ==========================================
-   */
-
-  function createProjectSnapshot(): Project {
-    const now =
-      new Date().toISOString();
-
-    return {
-      id: Date.now(),
-      name:
-        projectName.trim() ||
-        "Untitled YouBuild Project",
-      location:
-        projectLocation.trim() ||
-        "Kenya",
-      houseType,
-      notes: projectNotes,
-      createdAt: now,
-      updatedAt: now,
-
-      rooms: [...rooms],
-      walls: [...walls],
-      doors: [...doors],
-      windows: [...windows],
-
-      prices: { ...prices },
-
-      wastePercent,
-      transportPercent,
-      labourPercent,
-    };
-  }
-
-  function saveProject() {
-    try {
-      const existing = [...savedProjects];
-
-      const matchingIndex =
-        existing.findIndex(
-          (project) =>
-            project.name ===
-            projectName.trim()
-        );
-
-      const snapshot =
-        createProjectSnapshot();
-
-      if (matchingIndex >= 0) {
-        snapshot.id =
-          existing[matchingIndex].id;
-
-        snapshot.createdAt =
-          existing[matchingIndex].createdAt;
-
-        existing[matchingIndex] =
-          snapshot;
-      } else {
-        existing.unshift(snapshot);
-      }
-
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(existing)
-      );
-
-      setSavedProjects(existing);
-
-      setSaveMessage(
-        "Project saved successfully."
-      );
-
-      setTimeout(
-        () => setSaveMessage(""),
-        3000
-      );
-    } catch {
-      setSaveMessage(
-        "Could not save project."
-      );
-    }
-  }
-
-  /*
-   * ==========================================
-   * LOAD PROJECT
-   * ==========================================
-   */
-
-  function loadProject(
-    project: Project
-  ) {
-    setProjectName(project.name);
-    setProjectLocation(project.location);
-    setHouseType(project.houseType);
-    setProjectNotes(project.notes);
-
-    setRooms(project.rooms);
-    setWalls(project.walls);
-    setDoors(project.doors);
-    setWindows(project.windows);
-
-    setPrices(project.prices);
-
-    setWastePercent(
-      project.wastePercent
-    );
-
-    setTransportPercent(
-      project.transportPercent
-    );
-
-    setLabourPercent(
-      project.labourPercent
-    );
-
-    clearSelection();
-
-    setShowSavedProjects(false);
-
-    setSaveMessage(
-      `"${project.name}" loaded.`
-    );
-
-    setTimeout(
-      () => setSaveMessage(""),
-      3000
-    );
-  }
-
-  /*
-   * ==========================================
-   * DELETE SAVED PROJECT
-   * ==========================================
-   */
-
-  function deleteSavedProject(
-    id: number
-  ) {
-    const updated =
-      savedProjects.filter(
-        (project) =>
-          project.id !== id
-      );
-
-    setSavedProjects(updated);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(updated)
-    );
-  }
-
-  /*
-   * ==========================================
-   * RESET CURRENT PROJECT
-   * ==========================================
-   */
-
-  function resetProject() {
-    const confirmed =
-      window.confirm(
-        "Reset this project? All current floor-plan changes will be removed."
-      );
-
-    if (!confirmed) return;
-
-    setProjectName(
-      "My YouBuild Project"
-    );
-
-    setProjectLocation("Kenya");
-    setHouseType("Bungalow");
-    setProjectNotes("");
-
-    setRooms([
-      {
-        id: 1,
-        name: "Living Room",
-        width: 6,
-        height: 5,
-        x: 40,
-        y: 60,
-      },
-    ]);
-
-    setWalls([
-      {
-        id: 1,
-        name: "Exterior Wall",
-        length: 12,
-        thickness: 0.2,
-        x: 20,
-        y: 20,
-        direction: "horizontal",
-      },
-    ]);
-
-    setDoors([]);
-    setWindows([]);
-
-    setPrices(defaultPrices);
-
-    setWastePercent(5);
-    setTransportPercent(7);
-    setLabourPercent(30);
-
-    setSelectedId(1);
-    setSelectedWallId(null);
-    setSelectedDoorId(null);
-    setSelectedWindowId(null);
-  }
-
-  /*
-   * ==========================================
-   * PRINT / EXPORT
-   * ==========================================
-   */
-
-  function printProject() {
-    window.print();
-  }
-
-  /*
-   * ==========================================
-   * RETURN
-   * ==========================================
-   */
 
   return (
     <main className="min-h-screen bg-gray-100 text-gray-900">
-
       {/* HEADER */}
 
       <header className="border-b bg-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-
           <a
             href="/"
             className="text-2xl font-bold"
@@ -1011,400 +777,24 @@ export default function FloorplanDesigner() {
             </span>
           </a>
 
-          <div className="flex items-center gap-3">
-
-            <span className="hidden text-sm text-gray-500 sm:block">
+          <div className="text-right">
+            <p className="text-sm font-semibold">
               Floor Plan Designer
-            </span>
+            </p>
 
-            <button
-              onClick={() =>
-                setShowProjectPanel(
-                  !showProjectPanel
-                )
-              }
-              className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700"
-            >
-              Project
-            </button>
-
+            <p className="text-xs text-gray-500">
+              Smart Construction Planning
+            </p>
           </div>
         </div>
       </header>
 
-      {/* PROJECT CONTROL BAR */}
-
-      <section className="border-b bg-white">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
-
-          <div className="flex flex-wrap items-center gap-3">
-
-            <div className="rounded-xl bg-green-50 px-4 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-green-600">
-                Project
-              </p>
-
-              <p className="text-sm font-bold text-green-800">
-                {projectName}
-              </p>
-            </div>
-
-            <button
-              onClick={saveProject}
-              className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
-            >
-              Save Project
-            </button>
-
-            <button
-              onClick={() =>
-                setShowSavedProjects(
-                  !showSavedProjects
-                )
-              }
-              className="rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold hover:border-green-600 hover:bg-green-50"
-            >
-              Saved Projects
-            </button>
-
-            <button
-              onClick={printProject}
-              className="rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold hover:border-green-600 hover:bg-green-50"
-            >
-              Print / Export
-            </button>
-
-            <button
-              onClick={resetProject}
-              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100"
-            >
-              Reset
-            </button>
-
-            {saveMessage && (
-              <span className="rounded-xl bg-green-100 px-3 py-2 text-sm font-medium text-green-700">
-                {saveMessage}
-              </span>
-            )}
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* SAVED PROJECTS */}
-
-      {showSavedProjects && (
-        <section className="border-b bg-gray-50">
-          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
-
-            <div className="flex items-center justify-between">
-
-              <div>
-                <h2 className="font-bold">
-                  Saved YouBuild Projects
-                </h2>
-
-                <p className="text-sm text-gray-500">
-                  Projects saved on this device.
-                </p>
-              </div>
-
-              <button
-                onClick={() =>
-                  setShowSavedProjects(false)
-                }
-                className="rounded-lg border bg-white px-3 py-2 text-sm"
-              >
-                Close
-              </button>
-
-            </div>
-
-            {savedProjects.length === 0 ? (
-              <div className="mt-4 rounded-xl border border-dashed bg-white p-6 text-center text-sm text-gray-500">
-                No saved projects yet.
-              </div>
-            ) : (
-              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-
-                {savedProjects.map(
-                  (project) => (
-                    <div
-                      key={project.id}
-                      className="rounded-xl border bg-white p-4 shadow-sm"
-                    >
-
-                      <div className="flex items-start justify-between gap-3">
-
-                        <div>
-                          <h3 className="font-bold">
-                            {project.name}
-                          </h3>
-
-                          <p className="mt-1 text-xs text-gray-500">
-                            {project.location}
-                          </p>
-
-                          <p className="text-xs text-gray-500">
-                            {project.houseType}
-                          </p>
-                        </div>
-
-                        <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">
-                          SAVED
-                        </span>
-
-                      </div>
-
-                      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
-
-                        <div className="rounded-lg bg-gray-50 p-2">
-                          <span className="text-gray-500">
-                            Area
-                          </span>
-
-                          <p className="font-bold">
-                            {project.rooms
-                              .reduce(
-                                (sum, room) =>
-                                  sum +
-                                  room.width *
-                                    room.height,
-                                0
-                              )
-                              .toFixed(1)}{" "}
-                            m²
-                          </p>
-                        </div>
-
-                        <div className="rounded-lg bg-gray-50 p-2">
-                          <span className="text-gray-500">
-                            Rooms
-                          </span>
-
-                          <p className="font-bold">
-                            {project.rooms.length}
-                          </p>
-                        </div>
-
-                      </div>
-
-                      <div className="mt-4 flex gap-2">
-
-                        <button
-                          onClick={() =>
-                            loadProject(
-                              project
-                            )
-                          }
-                          className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700"
-                        >
-                          Load
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            deleteSavedProject(
-                              project.id
-                            )
-                          }
-                          className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600"
-                        >
-                          Delete
-                        </button>
-
-                      </div>
-
-                    </div>
-                  )
-                )}
-
-              </div>
-            )}
-
-          </div>
-        </section>
-      )}
-
-      {/* PROJECT DETAILS PANEL */}
-
-      {showProjectPanel && (
-        <section className="border-b bg-green-50">
-          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
-
-            <div className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
-                    Milestone 5
-                  </p>
-
-                  <h2 className="mt-1 text-xl font-bold">
-                    Project information
-                  </h2>
-
-                  <p className="mt-1 text-sm text-gray-500">
-                    Give your building project real information before saving it.
-                  </p>
-                </div>
-
-                <button
-                  onClick={() =>
-                    setShowProjectPanel(false)
-                  }
-                  className="rounded-lg border px-3 py-2 text-sm"
-                >
-                  Close
-                </button>
-
-              </div>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-3">
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    Project name
-                  </span>
-
-                  <input
-                    type="text"
-                    value={projectName}
-                    onChange={(e) =>
-                      setProjectName(
-                        e.target.value
-                      )
-                    }
-                    placeholder="e.g. Mike's Family Home"
-                    className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    Location
-                  </span>
-
-                  <input
-                    type="text"
-                    value={projectLocation}
-                    onChange={(e) =>
-                      setProjectLocation(
-                        e.target.value
-                      )
-                    }
-                    placeholder="e.g. Nairobi, Kenya"
-                    className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="text-sm font-semibold">
-                    House type
-                  </span>
-
-                  <select
-                    value={houseType}
-                    onChange={(e) =>
-                      setHouseType(
-                        e.target.value
-                      )
-                    }
-                    className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
-                  >
-                    {houseTypes.map(
-                      (type) => (
-                        <option
-                          key={type}
-                          value={type}
-                        >
-                          {type}
-                        </option>
-                      )
-                    )}
-                  </select>
-                </label>
-
-              </div>
-
-              <label className="mt-4 block">
-                <span className="text-sm font-semibold">
-                  Project notes
-                </span>
-
-                <textarea
-                  value={projectNotes}
-                  onChange={(e) =>
-                    setProjectNotes(
-                      e.target.value
-                    )
-                  }
-                  rows={3}
-                  placeholder="Add notes about the design, materials, contractor requirements, site information, etc."
-                  className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
-                />
-              </label>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-4">
-
-                <div className="rounded-xl bg-green-50 p-4">
-                  <p className="text-xs text-gray-500">
-                    Floor area
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-green-700">
-                    {totalArea.toFixed(1)} m²
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">
-                    Rooms
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold">
-                    {rooms.length}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">
-                    Walls
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold">
-                    {walls.length}
-                  </p>
-                </div>
-
-                <div className="rounded-xl bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">
-                    Estimated cost
-                  </p>
-
-                  <p className="mt-1 text-xl font-bold text-green-700">
-                    {money(grandTotal)}
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-      )}
-
-      {/* MAIN */}
-
       <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+        {/* INTRO */}
 
         <div className="mb-6">
-
           <p className="text-sm font-semibold uppercase tracking-wider text-green-600">
-            Home Designer
+            YouBuild
           </p>
 
           <h1 className="mt-1 text-3xl font-bold">
@@ -1412,52 +802,42 @@ export default function FloorplanDesigner() {
           </h1>
 
           <p className="mt-2 text-gray-600">
-            Design rooms, walls, doors and windows for your future home.
+            Design, estimate, analyze and plan
+            your construction project.
           </p>
-
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[260px_1fr_300px]">
-
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr_330px]">
           {/* LEFT PANEL */}
 
           <aside className="rounded-2xl border bg-white p-5 shadow-sm">
-
             <h2 className="font-semibold">
               Rooms
             </h2>
 
             <div className="mt-4 space-y-2">
-
-              {roomTypes.map(
-                (room) => (
-                  <button
-                    key={room}
-                    onClick={() =>
-                      addRoom(room)
-                    }
-                    className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
-                  >
-                    + {room}
-                  </button>
-                )
-              )}
-
+              {roomTypes.map((room) => (
+                <button
+                  key={room}
+                  onClick={() =>
+                    addRoom(room)
+                  }
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition hover:border-green-600 hover:bg-green-50"
+                >
+                  + {room}
+                </button>
+              ))}
             </div>
 
             <div className="mt-7 border-t pt-5">
-
               <h2 className="font-semibold">
                 Walls
               </h2>
 
               <div className="mt-4 space-y-2">
-
                 <button
                   onClick={() =>
-                    addWall(
-                      "horizontal"
-                    )
+                    addWall("horizontal")
                   }
                   className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
                 >
@@ -1466,40 +846,33 @@ export default function FloorplanDesigner() {
 
                 <button
                   onClick={() =>
-                    addWall(
-                      "vertical"
-                    )
+                    addWall("vertical")
                   }
                   className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
                 >
                   + Vertical wall
                 </button>
-
               </div>
-
             </div>
 
             <div className="mt-7 border-t pt-5">
-
               <h2 className="font-semibold">
                 Doors
               </h2>
 
               <div className="mt-4 space-y-2">
-
                 <button
                   disabled={
                     walls.length === 0
                   }
-                  onClick={() => {
-                    if (walls[0]) {
-                      addDoor(
-                        "Interior",
-                        walls[0].id
-                      );
-                    }
-                  }}
-                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() =>
+                    walls[0] &&
+                    addDoor(
+                      "Interior",
+                      walls[0].id
+                    )
+                  }
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:opacity-40"
                 >
                   + Interior door
                 </button>
@@ -1508,25 +881,21 @@ export default function FloorplanDesigner() {
                   disabled={
                     walls.length === 0
                   }
-                  onClick={() => {
-                    if (walls[0]) {
-                      addDoor(
-                        "Exterior",
-                        walls[0].id
-                      );
-                    }
-                  }}
-                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  onClick={() =>
+                    walls[0] &&
+                    addDoor(
+                      "Exterior",
+                      walls[0].id
+                    )
+                  }
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:opacity-40"
                 >
                   + Exterior door
                 </button>
-
               </div>
-
             </div>
 
             <div className="mt-7 border-t pt-5">
-
               <h2 className="font-semibold">
                 Windows
               </h2>
@@ -1535,30 +904,22 @@ export default function FloorplanDesigner() {
                 disabled={
                   walls.length === 0
                 }
-                onClick={() => {
-                  if (walls[0]) {
-                    addWindow(
-                      walls[0].id
-                    );
-                  }
-                }}
-                className="mt-4 w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() =>
+                  walls[0] &&
+                  addWindow(walls[0].id)
+                }
+                className="mt-4 w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:opacity-40"
               >
                 + Window
               </button>
-
             </div>
-
           </aside>
 
           {/* CANVAS */}
 
           <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
-
+            <div className="flex items-center justify-between border-b px-5 py-4">
               <div>
-
                 <h2 className="font-semibold">
                   Floor plan canvas
                 </h2>
@@ -1566,7 +927,6 @@ export default function FloorplanDesigner() {
                 <p className="text-xs text-gray-500">
                   Select an element to edit it.
                 </p>
-
               </div>
 
               <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium">
@@ -1575,11 +935,9 @@ export default function FloorplanDesigner() {
                 {doors.length} doors ·{" "}
                 {windows.length} windows
               </div>
-
             </div>
 
             <div className="overflow-auto p-4">
-
               <div
                 className="relative min-h-[500px] min-w-[700px] overflow-visible rounded-xl border-2 border-dashed border-gray-300"
                 style={{
@@ -1589,430 +947,343 @@ export default function FloorplanDesigner() {
                     "20px 20px",
                 }}
               >
-
                 {/* ROOMS */}
 
-                {rooms.map(
-                  (room) => {
-                    const isSelected =
-                      room.id ===
-                      selectedId;
+                {rooms.map((room) => {
+                  const isSelected =
+                    room.id === selectedId;
 
-                    const roomWidth =
-                      room.width * 35;
+                  const roomWidth =
+                    room.width * 35;
 
-                    const roomHeight =
-                      room.height * 30;
+                  const roomHeight =
+                    room.height * 30;
 
-                    return (
+                  return (
+                    <div
+                      key={room.id}
+                      className="absolute"
+                      style={{
+                        left: room.x,
+                        top: room.y,
+                        width: roomWidth,
+                        height: roomHeight,
+                      }}
+                    >
+                      <button
+                        onClick={() =>
+                          selectRoom(room.id)
+                        }
+                        className={`absolute inset-0 flex flex-col items-center justify-center rounded-lg border-2 text-center ${
+                          isSelected
+                            ? "border-green-600 bg-green-100 shadow-lg"
+                            : "border-gray-500 bg-white"
+                        }`}
+                      >
+                        <span className="text-sm font-semibold">
+                          {room.name}
+                        </span>
+
+                        <span className="mt-1 text-xs text-gray-500">
+                          {room.width}m ×{" "}
+                          {room.height}m
+                        </span>
+                      </button>
+
                       <div
-                        key={room.id}
-                        className="absolute"
+                        className="absolute left-0 flex items-center justify-center"
                         style={{
-                          left: room.x,
-                          top: room.y,
-                          width:
-                            roomWidth,
-                          height:
-                            roomHeight,
+                          top:
+                            roomHeight + 7,
+                          width: roomWidth,
                         }}
                       >
+                        <div className="h-px w-full bg-gray-500" />
 
-                        <button
-                          onClick={() =>
-                            selectRoom(
-                              room.id
-                            )
-                          }
-                          className={`absolute inset-0 flex flex-col items-center justify-center rounded-lg border-2 text-center ${
-                            isSelected
-                              ? "border-green-600 bg-green-100 shadow-lg"
-                              : "border-gray-500 bg-white"
-                          }`}
-                        >
-
-                          <span className="text-sm font-semibold">
-                            {room.name}
-                          </span>
-
-                          <span className="mt-1 text-xs text-gray-500">
-                            {room.width}m ×{" "}
-                            {room.height}m
-                          </span>
-
-                        </button>
-
-                        <div
-                          className="absolute left-0 flex items-center justify-center"
-                          style={{
-                            top:
-                              roomHeight +
-                              7,
-                            width:
-                              roomWidth,
-                          }}
-                        >
-
-                          <div className="h-px w-full bg-gray-500" />
-
-                          <span className="absolute bg-white px-1 text-[10px] font-medium text-gray-600">
-                            {room.width.toFixed(
-                              1
-                            )}{" "}
-                            m
-                          </span>
-
-                        </div>
-
-                        <div
-                          className="absolute top-0 flex items-center justify-center"
-                          style={{
-                            left:
-                              roomWidth +
-                              7,
-                            height:
-                              roomHeight,
-                          }}
-                        >
-
-                          <div className="h-full w-px bg-gray-500" />
-
-                          <span
-                            className="absolute whitespace-nowrap bg-white px-1 text-[10px] font-medium text-gray-600"
-                            style={{
-                              transform:
-                                "rotate(-90deg)",
-                            }}
-                          >
-                            {room.height.toFixed(
-                              1
-                            )}{" "}
-                            m
-                          </span>
-
-                        </div>
-
+                        <span className="absolute bg-white px-1 text-[10px] font-medium">
+                          {room.width.toFixed(
+                            1
+                          )}m
+                        </span>
                       </div>
-                    );
-                  }
-                )}
+
+                      <div
+                        className="absolute top-0 flex items-center justify-center"
+                        style={{
+                          left:
+                            roomWidth + 7,
+                          height: roomHeight,
+                        }}
+                      >
+                        <div className="h-full w-px bg-gray-500" />
+
+                        <span
+                          className="absolute whitespace-nowrap bg-white px-1 text-[10px] font-medium"
+                          style={{
+                            transform:
+                              "rotate(-90deg)",
+                          }}
+                        >
+                          {room.height.toFixed(
+                            1
+                          )}m
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
 
                 {/* WALLS */}
 
-                {walls.map(
-                  (wall) => {
-                    const isSelected =
-                      wall.id ===
-                      selectedWallId;
+                {walls.map((wall) => {
+                  const isSelected =
+                    wall.id ===
+                    selectedWallId;
 
-                    const horizontal =
-                      wall.direction ===
-                      "horizontal";
+                  const horizontal =
+                    wall.direction ===
+                    "horizontal";
 
-                    return (
-                      <div
-                        key={wall.id}
-                        className="absolute"
-                        style={{
-                          left: wall.x,
-                          top: wall.y,
-                          width:
-                            horizontal
-                              ? wall.length *
-                                35
-                              : 8,
-                          height:
-                            horizontal
-                              ? 8
-                              : wall.length *
-                                35,
-                        }}
+                  return (
+                    <div
+                      key={wall.id}
+                      className="absolute"
+                      style={{
+                        left: wall.x,
+                        top: wall.y,
+                        width: horizontal
+                          ? wall.length * 35
+                          : 8,
+                        height: horizontal
+                          ? 8
+                          : wall.length * 35,
+                      }}
+                    >
+                      <button
+                        onClick={() =>
+                          selectWall(
+                            wall.id
+                          )
+                        }
+                        className={`absolute inset-0 z-10 rounded-sm ${
+                          isSelected
+                            ? "bg-green-600 shadow-lg"
+                            : "bg-gray-800"
+                        }`}
+                      />
+
+                      <span
+                        className="absolute z-20 whitespace-nowrap bg-white px-1 text-[10px] font-medium text-gray-600"
+                        style={
+                          horizontal
+                            ? {
+                                left:
+                                  "50%",
+                                top: 12,
+                                transform:
+                                  "translateX(-50%)",
+                              }
+                            : {
+                                left: 12,
+                                top: "50%",
+                                transform:
+                                  "translateY(-50%) rotate(-90deg)",
+                              }
+                        }
                       >
-
-                        <button
-                          onClick={() =>
-                            selectWall(
-                              wall.id
-                            )
-                          }
-                          className={`absolute z-10 rounded-sm ${
-                            isSelected
-                              ? "bg-green-600 shadow-lg"
-                              : "bg-gray-800"
-                          }`}
-                          style={{
-                            inset: 0,
-                          }}
-                        />
-
-                        <div
-                          className="absolute z-20 flex items-center justify-center"
-                          style={
-                            horizontal
-                              ? {
-                                  top: 14,
-                                  left: 0,
-                                  width:
-                                    wall.length *
-                                    35,
-                                }
-                              : {
-                                  left: 14,
-                                  top: 0,
-                                  height:
-                                    wall.length *
-                                    35,
-                                }
-                          }
-                        >
-
-                          <div
-                            className={
-                              horizontal
-                                ? "h-px w-full bg-gray-500"
-                                : "h-full w-px bg-gray-500"
-                            }
-                          />
-
-                          <span
-                            className="absolute whitespace-nowrap bg-white px-1 text-[10px] font-medium text-gray-600"
-                            style={
-                              horizontal
-                                ? undefined
-                                : {
-                                    transform:
-                                      "rotate(-90deg)",
-                                  }
-                            }
-                          >
-                            {wall.length.toFixed(
-                              1
-                            )}{" "}
-                            m
-                          </span>
-
-                        </div>
-
-                      </div>
-                    );
-                  }
-                )}
+                        {wall.length.toFixed(
+                          1
+                        )}m
+                      </span>
+                    </div>
+                  );
+                })}
 
                 {/* DOORS */}
 
-                {doors.map(
-                  (door) => {
-                    const wall =
-                      walls.find(
-                        (item) =>
-                          item.id ===
-                          door.wallId
-                      );
-
-                    if (!wall)
-                      return null;
-
-                    const horizontal =
-                      wall.direction ===
-                      "horizontal";
-
-                    const isSelected =
-                      door.id ===
-                      selectedDoorId;
-
-                    const position =
-                      door.position *
-                      35;
-
-                    return (
-                      <div
-                        key={door.id}
-                        className="absolute z-30"
-                        style={{
-                          left:
-                            horizontal
-                              ? wall.x +
-                                position
-                              : wall.x,
-                          top:
-                            horizontal
-                              ? wall.y
-                              : wall.y +
-                                position,
-                        }}
-                      >
-
-                        <button
-                          onClick={() =>
-                            selectDoor(
-                              door.id
-                            )
-                          }
-                          className={
-                            isSelected
-                              ? "bg-green-600"
-                              : "bg-amber-500"
-                          }
-                          style={{
-                            width:
-                              horizontal
-                                ? door.width *
-                                  35
-                                : 10,
-                            height:
-                              horizontal
-                                ? 10
-                                : door.width *
-                                  35,
-                          }}
-                        />
-
-                        <span
-                          className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-medium text-gray-700 shadow-sm"
-                          style={
-                            horizontal
-                              ? {
-                                  left:
-                                    (door.width *
-                                      35) /
-                                    2,
-                                  top: 13,
-                                  transform:
-                                    "translateX(-50%)",
-                                }
-                              : {
-                                  left: 13,
-                                  top:
-                                    (door.width *
-                                      35) /
-                                    2,
-                                  transform:
-                                    "translateY(-50%) rotate(-90deg)",
-                                }
-                          }
-                        >
-                          {door.width.toFixed(
-                            1
-                          )}{" "}
-                          m
-                        </span>
-
-                      </div>
+                {doors.map((door) => {
+                  const wall =
+                    walls.find(
+                      (item) =>
+                        item.id ===
+                        door.wallId
                     );
-                  }
-                )}
+
+                  if (!wall) return null;
+
+                  const horizontal =
+                    wall.direction ===
+                    "horizontal";
+
+                  const position =
+                    door.position * 35;
+
+                  const isSelected =
+                    door.id ===
+                    selectedDoorId;
+
+                  return (
+                    <div
+                      key={door.id}
+                      className="absolute z-30"
+                      style={{
+                        left: horizontal
+                          ? wall.x +
+                            position
+                          : wall.x,
+                        top: horizontal
+                          ? wall.y
+                          : wall.y +
+                            position,
+                      }}
+                    >
+                      <button
+                        onClick={() =>
+                          selectDoor(
+                            door.id
+                          )
+                        }
+                        className={
+                          isSelected
+                            ? "bg-green-600"
+                            : "bg-amber-500"
+                        }
+                        style={{
+                          width: horizontal
+                            ? door.width *
+                              35
+                            : 10,
+                          height: horizontal
+                            ? 10
+                            : door.width *
+                              35,
+                        }}
+                      />
+
+                      <span
+                        className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-medium shadow"
+                        style={
+                          horizontal
+                            ? {
+                                left:
+                                  (door.width *
+                                    35) /
+                                  2,
+                                top: 13,
+                                transform:
+                                  "translateX(-50%)",
+                              }
+                            : {
+                                left: 13,
+                                top:
+                                  (door.width *
+                                    35) /
+                                  2,
+                                transform:
+                                  "translateY(-50%) rotate(-90deg)",
+                              }
+                        }
+                      >
+                        {door.width.toFixed(
+                          1
+                        )}m
+                      </span>
+                    </div>
+                  );
+                })}
 
                 {/* WINDOWS */}
 
-                {windows.map(
-                  (window) => {
-                    const wall =
-                      walls.find(
-                        (item) =>
-                          item.id ===
-                          window.wallId
-                      );
-
-                    if (!wall)
-                      return null;
-
-                    const horizontal =
-                      wall.direction ===
-                      "horizontal";
-
-                    const isSelected =
-                      window.id ===
-                      selectedWindowId;
-
-                    const position =
-                      window.position *
-                      35;
-
-                    return (
-                      <div
-                        key={window.id}
-                        className="absolute z-20"
-                        style={{
-                          left:
-                            horizontal
-                              ? wall.x +
-                                position
-                              : wall.x,
-                          top:
-                            horizontal
-                              ? wall.y
-                              : wall.y +
-                                position,
-                        }}
-                      >
-
-                        <button
-                          onClick={() =>
-                            selectWindow(
-                              window.id
-                            )
-                          }
-                          aria-label={
-                            window.name
-                          }
-                          className={
-                            isSelected
-                              ? "bg-green-600"
-                              : "bg-blue-500"
-                          }
-                          style={{
-                            width:
-                              horizontal
-                                ? window.width *
-                                  35
-                                : 8,
-                            height:
-                              horizontal
-                                ? 8
-                                : window.width *
-                                  35,
-                          }}
-                        >
-                          <span className="sr-only">
-                            {window.name}
-                          </span>
-                        </button>
-
-                        <span
-                          className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-medium text-gray-700 shadow-sm"
-                          style={
-                            horizontal
-                              ? {
-                                  left:
-                                    (window.width *
-                                      35) /
-                                    2,
-                                  top: 11,
-                                  transform:
-                                    "translateX(-50%)",
-                                }
-                              : {
-                                  left: 11,
-                                  top:
-                                    (window.width *
-                                      35) /
-                                    2,
-                                  transform:
-                                    "translateY(-50%) rotate(-90deg)",
-                                }
-                          }
-                        >
-                          {window.width.toFixed(
-                            1
-                          )}{" "}
-                          m
-                        </span>
-
-                      </div>
+                {windows.map((window) => {
+                  const wall =
+                    walls.find(
+                      (item) =>
+                        item.id ===
+                        window.wallId
                     );
-                  }
-                )}
 
+                  if (!wall) return null;
+
+                  const horizontal =
+                    wall.direction ===
+                    "horizontal";
+
+                  const position =
+                    window.position * 35;
+
+                  const isSelected =
+                    window.id ===
+                    selectedWindowId;
+
+                  return (
+                    <div
+                      key={window.id}
+                      className="absolute z-20"
+                      style={{
+                        left: horizontal
+                          ? wall.x +
+                            position
+                          : wall.x,
+                        top: horizontal
+                          ? wall.y
+                          : wall.y +
+                            position,
+                      }}
+                    >
+                      <button
+                        onClick={() =>
+                          selectWindow(
+                            window.id
+                          )
+                        }
+                        className={
+                          isSelected
+                            ? "bg-green-600"
+                            : "bg-blue-500"
+                        }
+                        style={{
+                          width: horizontal
+                            ? window.width *
+                              35
+                            : 8,
+                          height: horizontal
+                            ? 8
+                            : window.width *
+                              35,
+                        }}
+                      />
+
+                      <span
+                        className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-medium shadow"
+                        style={
+                          horizontal
+                            ? {
+                                left:
+                                  (window.width *
+                                    35) /
+                                  2,
+                                top: 11,
+                                transform:
+                                  "translateX(-50%)",
+                              }
+                            : {
+                                left: 11,
+                                top:
+                                  (window.width *
+                                    35) /
+                                  2,
+                                transform:
+                                  "translateY(-50%) rotate(-90deg)",
+                              }
+                        }
+                      >
+                        {window.width.toFixed(
+                          1
+                        )}m
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </section>
@@ -2020,31 +1291,24 @@ export default function FloorplanDesigner() {
           {/* RIGHT PANEL */}
 
           <aside className="space-y-6">
-
             {/* PROPERTIES */}
 
             <div className="rounded-2xl border bg-white p-5 shadow-sm">
-
               <h2 className="font-semibold">
                 Properties
               </h2>
 
               {selectedRoom && (
                 <>
-                  <div className="mt-5">
+                  <p className="mt-5 text-xs font-semibold text-gray-500">
+                    ROOM
+                  </p>
 
-                    <p className="text-xs text-gray-500">
-                      ROOM
-                    </p>
-
-                    <p className="mt-1 font-semibold">
-                      {selectedRoom.name}
-                    </p>
-
-                  </div>
+                  <p className="mt-1 font-semibold">
+                    {selectedRoom.name}
+                  </p>
 
                   <div className="mt-5 space-y-4">
-
                     <label className="block">
                       <span className="text-sm font-medium">
                         Width (m)
@@ -2090,70 +1354,64 @@ export default function FloorplanDesigner() {
                         className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
-
                   </div>
 
-                  <div className="mt-5">
+                  <p className="mt-5 text-sm font-medium">
+                    Move
+                  </p>
 
-                    <p className="text-sm font-medium">
-                      Move
-                    </p>
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    <span />
 
-                    <div className="mt-2 grid grid-cols-3 gap-2">
+                    <button
+                      onClick={() =>
+                        moveSelected(
+                          0,
+                          -20
+                        )
+                      }
+                      className="rounded-lg border py-2"
+                    >
+                      ↑
+                    </button>
 
-                      <span />
+                    <span />
 
-                      <button
-                        onClick={() =>
-                          moveSelected(
-                            0,
-                            -20
-                          )
-                        }
-                        className="rounded-lg border py-2"
-                      >
-                        ↑
-                      </button>
+                    <button
+                      onClick={() =>
+                        moveSelected(
+                          -20,
+                          0
+                        )
+                      }
+                      className="rounded-lg border py-2"
+                    >
+                      ←
+                    </button>
 
-                      <span />
+                    <button
+                      onClick={() =>
+                        moveSelected(
+                          0,
+                          20
+                        )
+                      }
+                      className="rounded-lg border py-2"
+                    >
+                      ↓
+                    </button>
 
-                      <button
-                        onClick={() =>
-                          moveSelected(
-                            -20,
-                            0
-                          )
-                        }
-                        className="rounded-lg border py-2"
-                      >
-                        ←
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          moveSelected(
-                            0,
-                            20
-                          )
-                        }
-                        className="rounded-lg border py-2"
-                      >
-                        ↓
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          moveSelected(
-                            20,
-                            0
-                          )
-                        }
-                        className="rounded-lg border py-2"
-                      >
-                        →
-                      </button>
-
-                    </div>
+                    <button
+                      onClick={() =>
+                        moveSelected(
+                          20,
+                          0
+                        )
+                      }
+                      className="rounded-lg border py-2"
+                    >
+                      →
+                    </button>
                   </div>
 
                   <button
@@ -2171,20 +1429,15 @@ export default function FloorplanDesigner() {
 
               {selectedWall && (
                 <>
-                  <div className="mt-5">
+                  <p className="mt-5 text-xs font-semibold text-gray-500">
+                    WALL
+                  </p>
 
-                    <p className="text-xs text-gray-500">
-                      WALL
-                    </p>
-
-                    <p className="mt-1 font-semibold">
-                      {selectedWall.name}
-                    </p>
-
-                  </div>
+                  <p className="mt-1 font-semibold">
+                    {selectedWall.name}
+                  </p>
 
                   <div className="mt-5 space-y-4">
-
                     <label className="block">
                       <span className="text-sm font-medium">
                         Length (m)
@@ -2231,7 +1484,6 @@ export default function FloorplanDesigner() {
                         className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
-
                   </div>
 
                   <button
@@ -2249,20 +1501,15 @@ export default function FloorplanDesigner() {
 
               {selectedDoor && (
                 <>
-                  <div className="mt-5">
+                  <p className="mt-5 text-xs font-semibold text-gray-500">
+                    DOOR
+                  </p>
 
-                    <p className="text-xs text-gray-500">
-                      DOOR
-                    </p>
-
-                    <p className="mt-1 font-semibold">
-                      {selectedDoor.name}
-                    </p>
-
-                  </div>
+                  <p className="mt-1 font-semibold">
+                    {selectedDoor.name}
+                  </p>
 
                   <div className="mt-5 space-y-4">
-
                     <label className="block">
                       <span className="text-sm font-medium">
                         Type
@@ -2283,7 +1530,6 @@ export default function FloorplanDesigner() {
                         <option value="Interior">
                           Interior
                         </option>
-
                         <option value="Exterior">
                           Exterior
                         </option>
@@ -2334,13 +1580,11 @@ export default function FloorplanDesigner() {
                         <option value="Left">
                           Left
                         </option>
-
                         <option value="Right">
                           Right
                         </option>
                       </select>
                     </label>
-
                   </div>
 
                   <button
@@ -2358,47 +1602,37 @@ export default function FloorplanDesigner() {
 
               {selectedWindow && (
                 <>
-                  <div className="mt-5">
+                  <p className="mt-5 text-xs font-semibold text-gray-500">
+                    WINDOW
+                  </p>
 
-                    <p className="text-xs text-gray-500">
-                      WINDOW
-                    </p>
+                  <p className="mt-1 font-semibold">
+                    {selectedWindow.name}
+                  </p>
 
-                    <p className="mt-1 font-semibold">
-                      {selectedWindow.name}
-                    </p>
+                  <label className="mt-5 block">
+                    <span className="text-sm font-medium">
+                      Width (m)
+                    </span>
 
-                  </div>
-
-                  <div className="mt-5">
-
-                    <label className="block">
-
-                      <span className="text-sm font-medium">
-                        Width (m)
-                      </span>
-
-                      <input
-                        type="number"
-                        min="0.4"
-                        step="0.1"
-                        value={
-                          selectedWindow.width
-                        }
-                        onChange={(e) =>
-                          updateSelectedWindow(
-                            "width",
-                            Number(
-                              e.target.value
-                            )
+                    <input
+                      type="number"
+                      min="0.4"
+                      step="0.1"
+                      value={
+                        selectedWindow.width
+                      }
+                      onChange={(e) =>
+                        updateSelectedWindow(
+                          "width",
+                          Number(
+                            e.target.value
                           )
-                        }
-                        className="mt-1 w-full rounded-lg border px-3 py-2"
-                      />
-
-                    </label>
-
-                  </div>
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2"
+                    />
+                  </label>
 
                   <button
                     onClick={() =>
@@ -2418,24 +1652,21 @@ export default function FloorplanDesigner() {
                 !selectedDoor &&
                 !selectedWindow && (
                   <p className="mt-5 text-sm text-gray-500">
-                    Select an element on the floor plan to edit it.
+                    Select an element on the
+                    floor plan to edit it.
                   </p>
                 )}
-
             </div>
 
             {/* MEASUREMENTS */}
 
             <div className="rounded-2xl border bg-white p-5 shadow-sm">
-
               <h2 className="font-semibold">
                 Measurements
               </h2>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
-
                 <div className="rounded-xl bg-green-50 p-4">
-
                   <p className="text-xs text-gray-500">
                     Floor area
                   </p>
@@ -2443,180 +1674,157 @@ export default function FloorplanDesigner() {
                   <p className="mt-1 text-xl font-bold text-green-700">
                     {totalArea.toFixed(1)} m²
                   </p>
-
                 </div>
 
                 <div className="rounded-xl bg-gray-100 p-4">
-
                   <p className="text-xs text-gray-500">
                     Wall length
                   </p>
 
                   <p className="mt-1 text-xl font-bold">
-                    {totalWallLength.toFixed(1)} m
+                    {totalWallLength.toFixed(
+                      1
+                    )}m
                   </p>
-
                 </div>
 
                 <div className="rounded-xl bg-gray-100 p-4 text-center">
-
                   <p className="text-xl font-bold">
                     {doors.length}
                   </p>
-
                   <p className="text-xs text-gray-500">
                     Doors
                   </p>
-
                 </div>
 
                 <div className="rounded-xl bg-gray-100 p-4 text-center">
-
                   <p className="text-xl font-bold">
                     {windows.length}
                   </p>
-
                   <p className="text-xs text-gray-500">
                     Windows
                   </p>
-
                 </div>
-
               </div>
-
             </div>
 
-            {/* COST ESTIMATE */}
+            {/* MILESTONE 4 */}
 
             <div className="rounded-2xl border bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
+                Milestone 4
+              </p>
 
-              <div className="flex items-center justify-between">
+              <h2 className="mt-1 text-xl font-bold">
+                Building cost estimate
+              </h2>
 
-                <div>
-
-                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
-                    Milestone 4
-                  </p>
-
-                  <h2 className="mt-1 text-xl font-bold">
-                    Building cost estimate
-                  </h2>
-
+              <div className="mt-5 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Cement</span>
+                  <span>
+                    {cementQuantity} bags
+                  </span>
                 </div>
 
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-                  KSh
-                </span>
+                <div className="flex justify-between">
+                  <span>Blocks</span>
+                  <span>
+                    {blockQuantity.toLocaleString()}
+                  </span>
+                </div>
 
+                <div className="flex justify-between">
+                  <span>Sand</span>
+                  <span>
+                    {sandQuantity} m³
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Ballast</span>
+                  <span>
+                    {ballastQuantity} m³
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Steel</span>
+                  <span>
+                    {steelQuantity} kg
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Roofing</span>
+                  <span>
+                    {roofingQuantity} m²
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Flooring</span>
+                  <span>
+                    {flooringQuantity} m²
+                  </span>
+                </div>
+
+                <div className="flex justify-between">
+                  <span>Paint</span>
+                  <span>
+                    {paintQuantity} units
+                  </span>
+                </div>
               </div>
 
-              {/* MATERIALS */}
+              <div className="mt-5 rounded-xl bg-green-600 p-4 text-white">
+                <p className="text-xs text-green-100">
+                  Estimated construction
+                  cost
+                </p>
 
-              <div className="mt-6">
+                <p className="mt-1 text-2xl font-bold">
+                  {money(grandTotal)}
+                </p>
 
-                <h3 className="font-semibold">
-                  Materials
-                </h3>
-
-                <div className="mt-3 space-y-2 text-sm">
-
-                  <div className="flex justify-between">
-                    <span>Cement</span>
-                    <span className="font-medium">
-                      {cementQuantity} bags
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Blocks</span>
-                    <span className="font-medium">
-                      {blockQuantity.toLocaleString()}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Sand</span>
-                    <span className="font-medium">
-                      {sandQuantity} m³
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Ballast</span>
-                    <span className="font-medium">
-                      {ballastQuantity} m³
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Steel</span>
-                    <span className="font-medium">
-                      {steelQuantity} kg
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Roofing</span>
-                    <span className="font-medium">
-                      {roofingQuantity} m²
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Flooring</span>
-                    <span className="font-medium">
-                      {flooringQuantity} m²
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Paint</span>
-                    <span className="font-medium">
-                      {paintQuantity} units
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Doors</span>
-                    <span className="font-medium">
-                      {doors.length}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between">
-                    <span>Windows</span>
-                    <span className="font-medium">
-                      {windows.length}
-                    </span>
-                  </div>
-
-                </div>
-
+                <p className="mt-1 text-xs text-green-100">
+                  {money(
+                    costPerSquareMeter
+                  )} per m²
+                </p>
               </div>
 
               {/* PRICES */}
 
               <div className="mt-6 border-t pt-5">
-
                 <h3 className="font-semibold">
                   Material prices
                 </h3>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Edit these prices to match current supplier prices.
+                  Update these to match
+                  supplier prices.
                 </p>
 
                 <div className="mt-4 space-y-3">
-
                   {(
                     [
                       ["Cement", "cement"],
                       ["Block", "blocks"],
                       ["Sand / m³", "sand"],
-                      ["Ballast / m³", "ballast"],
+                      [
+                        "Ballast / m³",
+                        "ballast",
+                      ],
                       ["Steel / kg", "steel"],
-                      ["Roofing / m²", "roofing"],
-                      ["Flooring / m²", "flooring"],
+                      [
+                        "Roofing / m²",
+                        "roofing",
+                      ],
+                      [
+                        "Flooring / m²",
+                        "flooring",
+                      ],
                       ["Paint", "paint"],
                       ["Door", "door"],
                       ["Window", "window"],
@@ -2624,62 +1832,43 @@ export default function FloorplanDesigner() {
                       string,
                       keyof MaterialPrice
                     ][]
-                  ).map(
-                    ([label, key]) => (
-                      <label
-                        key={key}
-                        className="block"
-                      >
+                  ).map(([label, key]) => (
+                    <label
+                      key={key}
+                      className="block"
+                    >
+                      <span className="text-xs font-medium text-gray-600">
+                        {label}
+                      </span>
 
-                        <span className="text-xs font-medium text-gray-600">
-                          {label}
-                        </span>
-
-                        <div className="mt-1 flex">
-
-                          <span className="flex items-center rounded-l-lg border border-r-0 bg-gray-100 px-2 text-xs">
-                            KSh
-                          </span>
-
-                          <input
-                            type="number"
-                            min="0"
-                            value={
-                              prices[key]
-                            }
-                            onChange={(e) =>
-                              updatePrice(
-                                key,
-                                Number(
-                                  e.target.value
-                                )
-                              )
-                            }
-                            className="w-full rounded-r-lg border px-3 py-2 text-sm"
-                          />
-
-                        </div>
-
-                      </label>
-                    )
-                  )}
-
+                      <input
+                        type="number"
+                        min="0"
+                        value={prices[key]}
+                        onChange={(e) =>
+                          updatePrice(
+                            key,
+                            Number(
+                              e.target.value
+                            )
+                          )
+                        }
+                        className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                      />
+                    </label>
+                  ))}
                 </div>
-
               </div>
 
               {/* ALLOWANCES */}
 
               <div className="mt-6 border-t pt-5">
-
                 <h3 className="font-semibold">
                   Allowances
                 </h3>
 
                 <div className="mt-4 space-y-3">
-
                   <label className="block">
-
                     <span className="text-xs font-medium text-gray-600">
                       Waste %
                     </span>
@@ -2687,10 +1876,7 @@ export default function FloorplanDesigner() {
                     <input
                       type="number"
                       min="0"
-                      max="100"
-                      value={
-                        wastePercent
-                      }
+                      value={wastePercent}
                       onChange={(e) =>
                         setWastePercent(
                           Math.max(
@@ -2703,11 +1889,9 @@ export default function FloorplanDesigner() {
                       }
                       className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
                     />
-
                   </label>
 
                   <label className="block">
-
                     <span className="text-xs font-medium text-gray-600">
                       Transport %
                     </span>
@@ -2715,7 +1899,6 @@ export default function FloorplanDesigner() {
                     <input
                       type="number"
                       min="0"
-                      max="100"
                       value={
                         transportPercent
                       }
@@ -2731,11 +1914,9 @@ export default function FloorplanDesigner() {
                       }
                       className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
                     />
-
                   </label>
 
                   <label className="block">
-
                     <span className="text-xs font-medium text-gray-600">
                       Labour %
                     </span>
@@ -2743,10 +1924,7 @@ export default function FloorplanDesigner() {
                     <input
                       type="number"
                       min="0"
-                      max="100"
-                      value={
-                        labourPercent
-                      }
+                      value={labourPercent}
                       onChange={(e) =>
                         setLabourPercent(
                           Math.max(
@@ -2759,29 +1937,521 @@ export default function FloorplanDesigner() {
                       }
                       className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
                     />
-
                   </label>
+                </div>
+              </div>
+            </div>
 
+            {/* MILESTONE 5 */}
+
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
+              <p className="text-xs font-semibold uppercase tracking-wider text-blue-600">
+                Milestone 5
+              </p>
+
+              <h2 className="mt-1 text-xl font-bold">
+                Project data analysis
+              </h2>
+
+              <div className="mt-5 space-y-4">
+                <div>
+                  <div className="mb-1 flex justify-between text-xs">
+                    <span>Materials</span>
+                    <span>
+                      {materialShare.toFixed(
+                        1
+                      )}
+                      %
+                    </span>
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full bg-blue-500"
+                      style={{
+                        width: `${Math.min(
+                          materialShare,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
                 </div>
 
+                <div>
+                  <div className="mb-1 flex justify-between text-xs">
+                    <span>Labour</span>
+                    <span>
+                      {labourShare.toFixed(
+                        1
+                      )}
+                      %
+                    </span>
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full bg-purple-500"
+                      style={{
+                        width: `${Math.min(
+                          labourShare,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1 flex justify-between text-xs">
+                    <span>Transport</span>
+                    <span>
+                      {transportShare.toFixed(
+                        1
+                      )}
+                      %
+                    </span>
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full bg-amber-500"
+                      style={{
+                        width: `${Math.min(
+                          transportShare,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="mb-1 flex justify-between text-xs">
+                    <span>Waste</span>
+                    <span>
+                      {wasteShare.toFixed(
+                        1
+                      )}
+                      %
+                    </span>
+                  </div>
+
+                  <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full bg-red-400"
+                      style={{
+                        width: `${Math.min(
+                          wasteShare,
+                          100
+                        )}%`,
+                      }}
+                    />
+                  </div>
+                </div>
               </div>
 
-              {/* BREAKDOWN */}
+              <div className="mt-5 rounded-xl bg-blue-50 p-4">
+                <p className="text-xs text-blue-700">
+                  Cost efficiency
+                </p>
 
-              <div className="mt-6 border-t pt-5">
+                <p className="mt-1 text-xl font-bold text-blue-800">
+                  {money(
+                    costPerSquareMeter
+                  )}
+                  /m²
+                </p>
+              </div>
+            </div>
 
-                <h3 className="font-semibold">
-                  Cost breakdown
-                </h3>
+            {/* MILESTONE 6 */}
 
-                <div className="mt-4 space-y-3 text-sm">
+            <div className="rounded-2xl border-2 border-green-200 bg-white p-5 shadow-sm">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
+                    Milestone 6
+                  </p>
 
-                  <div className="flex justify-between">
-                    <span>
-                      Raw materials
+                  <h2 className="mt-1 text-xl font-bold">
+                    Smart Project Planner
+                  </h2>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    Turn the estimate into a
+                    construction decision.
+                  </p>
+                </div>
+
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-bold ${budgetHealthClass}`}
+                >
+                  {budgetHealth}
+                </span>
+              </div>
+
+              {/* BUDGET */}
+
+              <div className="mt-6">
+                <label className="block">
+                  <span className="text-sm font-semibold">
+                    Available project budget
+                  </span>
+
+                  <div className="mt-2 flex">
+                    <span className="flex items-center rounded-l-lg border border-r-0 bg-gray-100 px-3 text-xs">
+                      KSh
                     </span>
 
-                    <span className="font-medium">
+                    <input
+                      type="number"
+                      min="0"
+                      value={budget}
+                      onChange={(e) =>
+                        setBudget(
+                          Math.max(
+                            0,
+                            Number(
+                              e.target.value
+                            )
+                          )
+                        )
+                      }
+                      className="w-full rounded-r-lg border px-3 py-2"
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {/* CONTINGENCY */}
+
+              <div className="mt-4">
+                <label className="block">
+                  <span className="text-sm font-semibold">
+                    Contingency %
+                  </span>
+
+                  <input
+                    type="number"
+                    min="0"
+                    max="50"
+                    value={
+                      contingencyPercent
+                    }
+                    onChange={(e) =>
+                      setContingencyPercent(
+                        Math.max(
+                          0,
+                          Math.min(
+                            50,
+                            Number(
+                              e.target.value
+                            )
+                          )
+                        )
+                      )
+                    }
+                    className="mt-1 w-full rounded-lg border px-3 py-2"
+                  />
+                </label>
+              </div>
+
+              {/* BUDGET SUMMARY */}
+
+              <div className="mt-5 rounded-2xl bg-gray-900 p-5 text-white">
+                <div className="flex justify-between text-sm">
+                  <span>
+                    Construction estimate
+                  </span>
+
+                  <span>
+                    {money(grandTotal)}
+                  </span>
+                </div>
+
+                <div className="mt-2 flex justify-between text-sm">
+                  <span>
+                    Contingency
+                  </span>
+
+                  <span>
+                    {money(contingencyCost)}
+                  </span>
+                </div>
+
+                <div className="mt-4 border-t border-gray-700 pt-4">
+                  <div className="flex justify-between">
+                    <span className="font-semibold">
+                      Recommended budget
+                    </span>
+
+                    <span className="font-bold">
+                      {money(
+                        recommendedProjectBudget
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-3 flex justify-between text-sm">
+                  <span>
+                    Budget difference
+                  </span>
+
+                  <span
+                    className={
+                      budgetDifference >= 0
+                        ? "font-bold text-green-400"
+                        : "font-bold text-red-400"
+                    }
+                  >
+                    {money(
+                      Math.abs(
+                        budgetDifference
+                      )
+                    )}{" "}
+                    {budgetDifference >= 0
+                      ? "remaining"
+                      : "shortfall"}
+                  </span>
+                </div>
+              </div>
+
+              {/* READINESS */}
+
+              <div className="mt-5 rounded-2xl bg-green-50 p-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold uppercase text-green-700">
+                      Build readiness
+                    </p>
+
+                    <p className="mt-1 text-2xl font-bold text-green-800">
+                      {readinessScore}/100
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-green-700">
+                      {readinessLabel}
+                    </p>
+
+                    <p className="text-xs text-green-600">
+                      Project planning score
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 h-3 overflow-hidden rounded-full bg-green-200">
+                  <div
+                    className="h-full rounded-full bg-green-600 transition-all"
+                    style={{
+                      width: `${readinessScore}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* SCENARIOS */}
+
+              <div className="mt-6">
+                <h3 className="font-semibold">
+                  Build scenarios
+                </h3>
+
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {(
+                    [
+                      [
+                        "economy",
+                        "Economy",
+                        "-15%",
+                      ],
+                      [
+                        "current",
+                        "Current",
+                        "Base",
+                      ],
+                      [
+                        "premium",
+                        "Premium",
+                        "+25%",
+                      ],
+                    ] as const
+                  ).map(
+                    ([
+                      id,
+                      label,
+                      change,
+                    ]) => (
+                      <button
+                        key={id}
+                        onClick={() =>
+                          setSelectedScenario(
+                            id
+                          )
+                        }
+                        className={`rounded-xl border p-3 text-left ${
+                          selectedScenario ===
+                          id
+                            ? "border-green-600 bg-green-50"
+                            : "border-gray-200 bg-white"
+                        }`}
+                      >
+                        <p className="text-xs font-semibold">
+                          {label}
+                        </p>
+
+                        <p className="mt-1 text-[10px] text-gray-500">
+                          {change}
+                        </p>
+
+                        <p className="mt-2 text-xs font-bold">
+                          {money(
+                            scenarioCosts[
+                              id
+                            ]
+                          )}
+                        </p>
+                      </button>
+                    )
+                  )}
+                </div>
+
+                <div className="mt-3 rounded-xl bg-gray-100 p-4">
+                  <p className="text-xs text-gray-500">
+                    Selected scenario
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold">
+                    {money(
+                      selectedScenarioCost
+                    )}
+                  </p>
+
+                  <p className="mt-1 text-xs text-gray-500">
+                    This is a planning scenario,
+                    not a supplier quotation.
+                  </p>
+                </div>
+              </div>
+
+              {/* CONSTRUCTION TIMELINE */}
+
+              <div className="mt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">
+                    Construction timeline
+                  </h3>
+
+                  <span className="text-xs font-semibold text-green-600">
+                    {totalDuration} working
+                    days
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {stageDefinitions.map(
+                    (stage) => {
+                      const stageCost =
+                        grandTotal *
+                        (stage.percentage /
+                          100);
+
+                      return (
+                        <div
+                          key={stage.name}
+                          className="rounded-xl border p-3"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span>
+                                {stage.icon}
+                              </span>
+
+                              <span className="text-sm font-semibold">
+                                {stage.name}
+                              </span>
+                            </div>
+
+                            <span className="text-xs font-bold">
+                              {money(
+                                stageCost
+                              )}
+                            </span>
+                          </div>
+
+                          <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                            <span>
+                              {stage.duration}{" "}
+                              days
+                            </span>
+
+                            <span>
+                              {stage.percentage}%
+                            </span>
+                          </div>
+
+                          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-gray-200">
+                            <div
+                              className="h-full bg-green-500"
+                              style={{
+                                width: `${stage.percentage * 5}%`,
+                              }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    }
+                  )}
+                </div>
+              </div>
+
+              {/* OPTIMIZATION */}
+
+              <div className="mt-6">
+                <h3 className="font-semibold">
+                  Biggest optimization opportunities
+                </h3>
+
+                <div className="mt-3 space-y-3">
+                  {optimizationItems
+                    .slice(0, 3)
+                    .map((item) => (
+                      <div
+                        key={item.title}
+                        className="rounded-xl bg-amber-50 p-4"
+                      >
+                        <div className="flex justify-between">
+                          <p className="text-sm font-semibold text-amber-900">
+                            {item.title}
+                          </p>
+
+                          <p className="text-xs font-bold text-amber-700">
+                            {money(item.value)}
+                          </p>
+                        </div>
+
+                        <p className="mt-1 text-xs leading-5 text-amber-800">
+                          {item.suggestion}
+                        </p>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* FINANCIAL SUMMARY */}
+
+              <div className="mt-6">
+                <h3 className="font-semibold">
+                  Financial summary
+                </h3>
+
+                <div className="mt-3 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>Materials</span>
+                    <span className="font-semibold">
                       {money(
                         rawMaterialCost
                       )}
@@ -2789,23 +2459,15 @@ export default function FloorplanDesigner() {
                   </div>
 
                   <div className="flex justify-between">
+                    <span>Waste</span>
                     <span>
-                      Waste
-                    </span>
-
-                    <span className="font-medium">
-                      {money(
-                        wasteCost
-                      )}
+                      {money(wasteCost)}
                     </span>
                   </div>
 
                   <div className="flex justify-between">
+                    <span>Transport</span>
                     <span>
-                      Transport
-                    </span>
-
-                    <span className="font-medium">
                       {money(
                         transportCost
                       )}
@@ -2813,227 +2475,37 @@ export default function FloorplanDesigner() {
                   </div>
 
                   <div className="flex justify-between">
+                    <span>Labour</span>
                     <span>
-                      Labour
-                    </span>
-
-                    <span className="font-medium">
-                      {money(
-                        labourCost
-                      )}
+                      {money(labourCost)}
                     </span>
                   </div>
 
-                </div>
-
-              </div>
-
-              {/* TOTAL */}
-
-              <div className="mt-6 rounded-2xl bg-green-600 p-5 text-white">
-
-                <p className="text-sm text-green-100">
-                  Estimated construction cost
-                </p>
-
-                <p className="mt-1 text-3xl font-bold">
-                  {money(grandTotal)}
-                </p>
-
-                <div className="mt-4 border-t border-green-400 pt-3">
-
-                  <div className="flex justify-between text-sm">
-
+                  <div className="flex justify-between border-t pt-3 font-bold">
+                    <span>Total</span>
                     <span>
-                      Cost per m²
+                      {money(grandTotal)}
                     </span>
-
-                    <span className="font-bold">
-                      {money(
-                        costPerSquareMeter
-                      )}
-                    </span>
-
                   </div>
-
                 </div>
-
               </div>
 
-              <div className="mt-4 rounded-xl bg-amber-50 p-3">
-
-                <p className="text-xs leading-5 text-amber-800">
-                  This is a planning estimate. Actual construction costs depend on location, supplier prices, design specifications, transport distance, labour rates and site conditions.
+              <div className="mt-6 rounded-xl bg-blue-50 p-4">
+                <p className="text-xs leading-5 text-blue-800">
+                  <strong>Important:</strong>{" "}
+                  YouBuild's estimate is a
+                  planning tool. Actual costs
+                  should eventually be replaced
+                  or verified with current local
+                  supplier quotations, contractor
+                  rates, site conditions and
+                  professional quantities.
                 </p>
-
               </div>
-
             </div>
-
-            {/* MILESTONE 5 SUMMARY */}
-
-            <div className="rounded-2xl border bg-white p-5 shadow-sm">
-
-              <div className="flex items-center justify-between">
-
-                <div>
-
-                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
-                    Milestone 5
-                  </p>
-
-                  <h2 className="mt-1 text-xl font-bold">
-                    Project summary
-                  </h2>
-
-                </div>
-
-                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-                  PROJECT
-                </span>
-
-              </div>
-
-              <div className="mt-5 space-y-3 text-sm">
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Project
-                  </span>
-
-                  <span className="font-semibold text-right">
-                    {projectName}
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Location
-                  </span>
-
-                  <span className="font-semibold text-right">
-                    {projectLocation}
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    House type
-                  </span>
-
-                  <span className="font-semibold">
-                    {houseType}
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Floor area
-                  </span>
-
-                  <span className="font-semibold">
-                    {totalArea.toFixed(1)} m²
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Rooms
-                  </span>
-
-                  <span className="font-semibold">
-                    {rooms.length}
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Walls
-                  </span>
-
-                  <span className="font-semibold">
-                    {walls.length}
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Doors
-                  </span>
-
-                  <span className="font-semibold">
-                    {doors.length}
-                  </span>
-                </div>
-
-                <div className="flex justify-between border-b pb-3">
-                  <span className="text-gray-500">
-                    Windows
-                  </span>
-
-                  <span className="font-semibold">
-                    {windows.length}
-                  </span>
-                </div>
-
-              </div>
-
-              <div className="mt-5 rounded-xl bg-green-50 p-4">
-
-                <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
-                  Estimated project cost
-                </p>
-
-                <p className="mt-1 text-2xl font-bold text-green-700">
-                  {money(grandTotal)}
-                </p>
-
-                <p className="mt-1 text-xs text-gray-500">
-                  {money(
-                    costPerSquareMeter
-                  )} per m²
-                </p>
-
-              </div>
-
-              <button
-                onClick={saveProject}
-                className="mt-4 w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white hover:bg-green-700"
-              >
-                Save this project
-              </button>
-
-            </div>
-
           </aside>
-
         </div>
       </section>
-
-      {/* PRINT STYLES */}
-
-      <style jsx global>{`
-        @media print {
-          header,
-          button,
-          aside:first-child {
-            display: none !important;
-          }
-
-          body {
-            background: white !important;
-          }
-
-          main {
-            background: white !important;
-          }
-
-          section {
-            break-inside: avoid;
-          }
-        }
-      `}</style>
-
     </main>
   );
 }
