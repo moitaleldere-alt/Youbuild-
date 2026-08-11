@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Room = {
   id: number;
@@ -52,6 +52,27 @@ type MaterialPrice = {
   window: number;
 };
 
+type Project = {
+  id: number;
+  name: string;
+  location: string;
+  houseType: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+
+  rooms: Room[];
+  walls: Wall[];
+  doors: Door[];
+  windows: Window[];
+
+  prices: MaterialPrice;
+
+  wastePercent: number;
+  transportPercent: number;
+  labourPercent: number;
+};
+
 const roomTypes = [
   "Living Room",
   "Bedroom",
@@ -59,6 +80,15 @@ const roomTypes = [
   "Bathroom",
   "Dining Room",
   "Garage",
+];
+
+const houseTypes = [
+  "Bungalow",
+  "Maisonette",
+  "Apartment",
+  "Villa",
+  "Townhouse",
+  "Custom",
 ];
 
 const defaultPrices: MaterialPrice = {
@@ -73,6 +103,8 @@ const defaultPrices: MaterialPrice = {
   door: 12000,
   window: 8500,
 };
+
+const STORAGE_KEY = "youbuild-projects-v5";
 
 export default function FloorplanDesigner() {
   const [rooms, setRooms] = useState<Room[]>([
@@ -115,6 +147,62 @@ export default function FloorplanDesigner() {
   const [wastePercent, setWastePercent] = useState(5);
   const [transportPercent, setTransportPercent] = useState(7);
   const [labourPercent, setLabourPercent] = useState(30);
+
+  /*
+   * ==========================================
+   * MILESTONE 5
+   * PROJECT MANAGEMENT
+   * ==========================================
+   */
+
+  const [projectName, setProjectName] =
+    useState("My YouBuild Project");
+
+  const [projectLocation, setProjectLocation] =
+    useState("Kenya");
+
+  const [houseType, setHouseType] =
+    useState("Bungalow");
+
+  const [projectNotes, setProjectNotes] =
+    useState("");
+
+  const [savedProjects, setSavedProjects] =
+    useState<Project[]>([]);
+
+  const [showProjectPanel, setShowProjectPanel] =
+    useState(false);
+
+  const [showSavedProjects, setShowSavedProjects] =
+    useState(false);
+
+  const [saveMessage, setSaveMessage] =
+    useState("");
+
+  /*
+   * ==========================================
+   * LOAD SAVED PROJECTS
+   * ==========================================
+   */
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+
+      if (saved) {
+        const parsed: Project[] = JSON.parse(saved);
+        setSavedProjects(parsed);
+      }
+    } catch {
+      console.error("Could not load saved YouBuild projects.");
+    }
+  }, []);
+
+  /*
+   * ==========================================
+   * SELECTED ELEMENTS
+   * ==========================================
+   */
 
   const selectedRoom = rooms.find(
     (room) => room.id === selectedId
@@ -167,6 +255,12 @@ export default function FloorplanDesigner() {
     setSelectedWindowId(id);
   }
 
+  /*
+   * ==========================================
+   * ROOMS
+   * ==========================================
+   */
+
   function addRoom(name: string) {
     const newRoom: Room = {
       id: Date.now(),
@@ -177,7 +271,11 @@ export default function FloorplanDesigner() {
       y: 100 + rooms.length * 25,
     };
 
-    setRooms((current) => [...current, newRoom]);
+    setRooms((current) => [
+      ...current,
+      newRoom,
+    ]);
+
     selectRoom(newRoom.id);
   }
 
@@ -231,6 +329,12 @@ export default function FloorplanDesigner() {
     );
   }
 
+  /*
+   * ==========================================
+   * WALLS
+   * ==========================================
+   */
+
   function addWall(
     direction: "horizontal" | "vertical"
   ) {
@@ -244,21 +348,31 @@ export default function FloorplanDesigner() {
       direction,
     };
 
-    setWalls((current) => [...current, newWall]);
+    setWalls((current) => [
+      ...current,
+      newWall,
+    ]);
+
     selectWall(newWall.id);
   }
 
   function removeWall(id: number) {
     setWalls((current) =>
-      current.filter((wall) => wall.id !== id)
+      current.filter(
+        (wall) => wall.id !== id
+      )
     );
 
     setDoors((current) =>
-      current.filter((door) => door.wallId !== id)
+      current.filter(
+        (door) => door.wallId !== id
+      )
     );
 
     setWindows((current) =>
-      current.filter((window) => window.wallId !== id)
+      current.filter(
+        (window) => window.wallId !== id
+      )
     );
 
     if (selectedWallId === id) {
@@ -287,6 +401,12 @@ export default function FloorplanDesigner() {
     );
   }
 
+  /*
+   * ==========================================
+   * DOORS
+   * ==========================================
+   */
+
   function addDoor(
     type: "Interior" | "Exterior",
     wallId: number
@@ -310,13 +430,19 @@ export default function FloorplanDesigner() {
       swing: "Right",
     };
 
-    setDoors((current) => [...current, newDoor]);
+    setDoors((current) => [
+      ...current,
+      newDoor,
+    ]);
+
     selectDoor(newDoor.id);
   }
 
   function removeDoor(id: number) {
     setDoors((current) =>
-      current.filter((door) => door.id !== id)
+      current.filter(
+        (door) => door.id !== id
+      )
     );
 
     if (selectedDoorId === id) {
@@ -339,25 +465,38 @@ export default function FloorplanDesigner() {
         if (property === "width") {
           return {
             ...door,
-            width: Math.max(0.6, Number(value)),
+            width: Math.max(
+              0.6,
+              Number(value)
+            ),
           };
         }
 
         if (property === "swing") {
           return {
             ...door,
-            swing: value as "Left" | "Right",
+            swing:
+              value as "Left" | "Right",
           };
         }
 
         return {
           ...door,
-          type: value as "Interior" | "Exterior",
+          type:
+            value as
+              | "Interior"
+              | "Exterior",
           name: `${value} Door`,
         };
       })
     );
   }
+
+  /*
+   * ==========================================
+   * WINDOWS
+   * ==========================================
+   */
 
   function addWindow(wallId: number) {
     const wall = walls.find(
@@ -398,6 +537,7 @@ export default function FloorplanDesigner() {
   }
 
   function updateSelectedWindow(
+    property: "width",
     value: number
   ) {
     if (!selectedWindowId) return;
@@ -407,12 +547,21 @@ export default function FloorplanDesigner() {
         window.id === selectedWindowId
           ? {
               ...window,
-              width: Math.max(0.4, value),
+              width: Math.max(
+                0.4,
+                value
+              ),
             }
           : window
       )
     );
   }
+
+  /*
+   * ==========================================
+   * MATERIAL PRICES
+   * ==========================================
+   */
 
   function updatePrice(
     property: keyof MaterialPrice,
@@ -420,108 +569,150 @@ export default function FloorplanDesigner() {
   ) {
     setPrices((current) => ({
       ...current,
-      [property]: Math.max(0, value),
+      [property]: Math.max(
+        0,
+        value
+      ),
     }));
   }
 
   /*
-   * ==========================
+   * ==========================================
    * MEASUREMENTS
-   * ==========================
+   * ==========================================
    */
 
   const totalArea = rooms.reduce(
     (total, room) =>
-      total + room.width * room.height,
+      total +
+      room.width * room.height,
     0
   );
 
   const totalWallLength = walls.reduce(
-    (total, wall) => total + wall.length,
+    (total, wall) =>
+      total + wall.length,
     0
   );
 
   /*
-   * ==========================
+   * ==========================================
    * MILESTONE 4
-   * BUILDING COST ESTIMATE
-   * ==========================
+   * BUILDING COST CALCULATOR
+   * ==========================================
    */
 
-  const wallArea = totalWallLength * 3;
-  const floorArea = totalArea;
-  const roofArea = floorArea * 1.15;
-  const plasterArea = wallArea * 2;
+  const wallArea =
+    totalWallLength * 3;
 
-  const cementQuantity = Math.max(
-    1,
-    Math.ceil(plasterArea * 0.18)
-  );
+  const floorArea =
+    totalArea;
 
-  const blockQuantity = Math.max(
-    1,
-    Math.ceil(wallArea * 12.5)
-  );
+  const roofArea =
+    floorArea * 1.15;
 
-  const sandQuantity = Math.max(
-    1,
-    Math.ceil(plasterArea * 0.018)
-  );
+  const plasterArea =
+    wallArea * 2;
 
-  const ballastQuantity = Math.max(
-    1,
-    Math.ceil(floorArea * 0.08)
-  );
+  const cementQuantity =
+    Math.max(
+      1,
+      Math.ceil(
+        plasterArea * 0.18
+      )
+    );
 
-  const steelQuantity = Math.max(
-    1,
-    Math.ceil(floorArea * 4.5)
-  );
+  const blockQuantity =
+    Math.max(
+      1,
+      Math.ceil(
+        wallArea * 12.5
+      )
+    );
 
-  const roofingQuantity = Math.max(
-    1,
-    Math.ceil(roofArea)
-  );
+  const sandQuantity =
+    Math.max(
+      1,
+      Math.ceil(
+        plasterArea * 0.018
+      )
+    );
 
-  const flooringQuantity = Math.max(
-    1,
-    Math.ceil(floorArea)
-  );
+  const ballastQuantity =
+    Math.max(
+      1,
+      Math.ceil(
+        floorArea * 0.08
+      )
+    );
 
-  const paintQuantity = Math.max(
-    1,
-    Math.ceil(plasterArea / 35)
-  );
+  const steelQuantity =
+    Math.max(
+      1,
+      Math.ceil(
+        floorArea * 4.5
+      )
+    );
+
+  const roofingQuantity =
+    Math.max(
+      1,
+      Math.ceil(roofArea)
+    );
+
+  const flooringQuantity =
+    Math.max(
+      1,
+      Math.ceil(floorArea)
+    );
+
+  const paintQuantity =
+    Math.max(
+      1,
+      Math.ceil(
+        plasterArea / 35
+      )
+    );
 
   const cementCost =
-    cementQuantity * prices.cement;
+    cementQuantity *
+    prices.cement;
 
   const blockCost =
-    blockQuantity * prices.blocks;
+    blockQuantity *
+    prices.blocks;
 
   const sandCost =
-    sandQuantity * prices.sand;
+    sandQuantity *
+    prices.sand;
 
   const ballastCost =
-    ballastQuantity * prices.ballast;
+    ballastQuantity *
+    prices.ballast;
 
   const steelCost =
-    steelQuantity * prices.steel;
+    steelQuantity *
+    prices.steel;
 
   const roofingCost =
-    roofingQuantity * prices.roofing;
+    roofingQuantity *
+    prices.roofing;
 
   const flooringCost =
-    flooringQuantity * prices.flooring;
+    flooringQuantity *
+    prices.flooring;
 
   const paintCost =
-    paintQuantity * prices.paint;
+    paintQuantity *
+    prices.paint;
 
   const doorCost =
-    doors.length * prices.door;
+    doors.length *
+    prices.door;
 
   const windowCost =
-    windows.length * prices.window;
+    windows.length *
+    prices.window;
 
   const rawMaterialCost =
     cementCost +
@@ -548,7 +739,8 @@ export default function FloorplanDesigner() {
     (labourPercent / 100);
 
   const materialsSubtotal =
-    rawMaterialCost + wasteCost;
+    rawMaterialCost +
+    wasteCost;
 
   const grandTotal =
     materialsSubtotal +
@@ -569,17 +761,249 @@ export default function FloorplanDesigner() {
     )}`;
   }
 
+  /*
+   * ==========================================
+   * MILESTONE 5
+   * SAVE PROJECT
+   * ==========================================
+   */
+
+  function createProjectSnapshot(): Project {
+    const now =
+      new Date().toISOString();
+
+    return {
+      id: Date.now(),
+      name:
+        projectName.trim() ||
+        "Untitled YouBuild Project",
+      location:
+        projectLocation.trim() ||
+        "Kenya",
+      houseType,
+      notes: projectNotes,
+      createdAt: now,
+      updatedAt: now,
+
+      rooms: [...rooms],
+      walls: [...walls],
+      doors: [...doors],
+      windows: [...windows],
+
+      prices: { ...prices },
+
+      wastePercent,
+      transportPercent,
+      labourPercent,
+    };
+  }
+
+  function saveProject() {
+    try {
+      const existing = [...savedProjects];
+
+      const matchingIndex =
+        existing.findIndex(
+          (project) =>
+            project.name ===
+            projectName.trim()
+        );
+
+      const snapshot =
+        createProjectSnapshot();
+
+      if (matchingIndex >= 0) {
+        snapshot.id =
+          existing[matchingIndex].id;
+
+        snapshot.createdAt =
+          existing[matchingIndex].createdAt;
+
+        existing[matchingIndex] =
+          snapshot;
+      } else {
+        existing.unshift(snapshot);
+      }
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(existing)
+      );
+
+      setSavedProjects(existing);
+
+      setSaveMessage(
+        "Project saved successfully."
+      );
+
+      setTimeout(
+        () => setSaveMessage(""),
+        3000
+      );
+    } catch {
+      setSaveMessage(
+        "Could not save project."
+      );
+    }
+  }
+
+  /*
+   * ==========================================
+   * LOAD PROJECT
+   * ==========================================
+   */
+
+  function loadProject(
+    project: Project
+  ) {
+    setProjectName(project.name);
+    setProjectLocation(project.location);
+    setHouseType(project.houseType);
+    setProjectNotes(project.notes);
+
+    setRooms(project.rooms);
+    setWalls(project.walls);
+    setDoors(project.doors);
+    setWindows(project.windows);
+
+    setPrices(project.prices);
+
+    setWastePercent(
+      project.wastePercent
+    );
+
+    setTransportPercent(
+      project.transportPercent
+    );
+
+    setLabourPercent(
+      project.labourPercent
+    );
+
+    clearSelection();
+
+    setShowSavedProjects(false);
+
+    setSaveMessage(
+      `"${project.name}" loaded.`
+    );
+
+    setTimeout(
+      () => setSaveMessage(""),
+      3000
+    );
+  }
+
+  /*
+   * ==========================================
+   * DELETE SAVED PROJECT
+   * ==========================================
+   */
+
+  function deleteSavedProject(
+    id: number
+  ) {
+    const updated =
+      savedProjects.filter(
+        (project) =>
+          project.id !== id
+      );
+
+    setSavedProjects(updated);
+
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(updated)
+    );
+  }
+
+  /*
+   * ==========================================
+   * RESET CURRENT PROJECT
+   * ==========================================
+   */
+
+  function resetProject() {
+    const confirmed =
+      window.confirm(
+        "Reset this project? All current floor-plan changes will be removed."
+      );
+
+    if (!confirmed) return;
+
+    setProjectName(
+      "My YouBuild Project"
+    );
+
+    setProjectLocation("Kenya");
+    setHouseType("Bungalow");
+    setProjectNotes("");
+
+    setRooms([
+      {
+        id: 1,
+        name: "Living Room",
+        width: 6,
+        height: 5,
+        x: 40,
+        y: 60,
+      },
+    ]);
+
+    setWalls([
+      {
+        id: 1,
+        name: "Exterior Wall",
+        length: 12,
+        thickness: 0.2,
+        x: 20,
+        y: 20,
+        direction: "horizontal",
+      },
+    ]);
+
+    setDoors([]);
+    setWindows([]);
+
+    setPrices(defaultPrices);
+
+    setWastePercent(5);
+    setTransportPercent(7);
+    setLabourPercent(30);
+
+    setSelectedId(1);
+    setSelectedWallId(null);
+    setSelectedDoorId(null);
+    setSelectedWindowId(null);
+  }
+
+  /*
+   * ==========================================
+   * PRINT / EXPORT
+   * ==========================================
+   */
+
+  function printProject() {
+    window.print();
+  }
+
+  /*
+   * ==========================================
+   * RETURN
+   * ==========================================
+   */
+
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-green-50 text-slate-900">
+    <main className="min-h-screen bg-gray-100 text-gray-900">
 
       {/* HEADER */}
 
-      <header className="sticky top-0 z-50 border-b border-green-100 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
+      <header className="border-b bg-white">
+        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
 
           <a
             href="/"
-            className="flex items-center gap-1 text-2xl font-black tracking-tight"
+            className="text-2xl font-bold"
           >
             You
             <span className="text-green-600">
@@ -587,142 +1011,486 @@ export default function FloorplanDesigner() {
             </span>
           </a>
 
-          <div className="hidden items-center gap-3 sm:flex">
-            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
-              MILESTONE 4
-            </span>
+          <div className="flex items-center gap-3">
 
-            <span className="text-sm font-medium text-slate-500">
+            <span className="hidden text-sm text-gray-500 sm:block">
               Floor Plan Designer
             </span>
-          </div>
 
+            <button
+              onClick={() =>
+                setShowProjectPanel(
+                  !showProjectPanel
+                )
+              }
+              className="rounded-xl bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-700"
+            >
+              Project
+            </button>
+
+          </div>
         </div>
       </header>
 
-      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      {/* PROJECT CONTROL BAR */}
 
-        {/* HERO */}
+      <section className="border-b bg-white">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6">
 
-        <div className="mb-7 overflow-hidden rounded-3xl bg-gradient-to-r from-green-700 via-emerald-600 to-teal-600 p-6 text-white shadow-xl sm:p-8">
+          <div className="flex flex-wrap items-center gap-3">
 
-          <div className="max-w-3xl">
+            <div className="rounded-xl bg-green-50 px-4 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-green-600">
+                Project
+              </p>
 
-            <div className="mb-3 inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur">
-              YouBuild Home Designer
+              <p className="text-sm font-bold text-green-800">
+                {projectName}
+              </p>
             </div>
 
-            <h1 className="text-3xl font-black sm:text-4xl">
-              Design your home.
-            </h1>
+            <button
+              onClick={saveProject}
+              className="rounded-xl bg-green-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-700"
+            >
+              Save Project
+            </button>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-green-50 sm:text-base">
-              Build your floor plan, add rooms,
-              walls, doors and windows, then get
-              a planning estimate for the construction.
-            </p>
+            <button
+              onClick={() =>
+                setShowSavedProjects(
+                  !showSavedProjects
+                )
+              }
+              className="rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold hover:border-green-600 hover:bg-green-50"
+            >
+              Saved Projects
+            </button>
+
+            <button
+              onClick={printProject}
+              className="rounded-xl border bg-white px-4 py-2.5 text-sm font-semibold hover:border-green-600 hover:bg-green-50"
+            >
+              Print / Export
+            </button>
+
+            <button
+              onClick={resetProject}
+              className="rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100"
+            >
+              Reset
+            </button>
+
+            {saveMessage && (
+              <span className="rounded-xl bg-green-100 px-3 py-2 text-sm font-medium text-green-700">
+                {saveMessage}
+              </span>
+            )}
 
           </div>
 
         </div>
+      </section>
 
-        <div className="grid gap-6 lg:grid-cols-[250px_1fr_330px]">
+      {/* SAVED PROJECTS */}
 
-          {/* LEFT TOOLBOX */}
+      {showSavedProjects && (
+        <section className="border-b bg-gray-50">
+          <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6">
 
-          <aside className="h-fit rounded-3xl border border-slate-200 bg-white p-5 shadow-lg">
+            <div className="flex items-center justify-between">
 
-            <div className="mb-5">
-              <div className="mb-1 flex items-center gap-2">
-                <div className="rounded-lg bg-green-100 p-2 text-green-700">
-                  🏠
-                </div>
-
-                <h2 className="font-black">
-                  Build tools
+              <div>
+                <h2 className="font-bold">
+                  Saved YouBuild Projects
                 </h2>
+
+                <p className="text-sm text-gray-500">
+                  Projects saved on this device.
+                </p>
               </div>
 
-              <p className="text-xs text-slate-500">
-                Add components to your floor plan.
-              </p>
+              <button
+                onClick={() =>
+                  setShowSavedProjects(false)
+                }
+                className="rounded-lg border bg-white px-3 py-2 text-sm"
+              >
+                Close
+              </button>
+
             </div>
 
-            {/* ROOMS */}
+            {savedProjects.length === 0 ? (
+              <div className="mt-4 rounded-xl border border-dashed bg-white p-6 text-center text-sm text-gray-500">
+                No saved projects yet.
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
 
-            <div>
-              <p className="mb-2 text-xs font-black uppercase tracking-wider text-green-700">
-                Rooms
-              </p>
+                {savedProjects.map(
+                  (project) => (
+                    <div
+                      key={project.id}
+                      className="rounded-xl border bg-white p-4 shadow-sm"
+                    >
 
-              <div className="space-y-2">
-                {roomTypes.map((room) => (
+                      <div className="flex items-start justify-between gap-3">
+
+                        <div>
+                          <h3 className="font-bold">
+                            {project.name}
+                          </h3>
+
+                          <p className="mt-1 text-xs text-gray-500">
+                            {project.location}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            {project.houseType}
+                          </p>
+                        </div>
+
+                        <span className="rounded-full bg-green-100 px-2 py-1 text-[10px] font-bold text-green-700">
+                          SAVED
+                        </span>
+
+                      </div>
+
+                      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
+
+                        <div className="rounded-lg bg-gray-50 p-2">
+                          <span className="text-gray-500">
+                            Area
+                          </span>
+
+                          <p className="font-bold">
+                            {project.rooms
+                              .reduce(
+                                (sum, room) =>
+                                  sum +
+                                  room.width *
+                                    room.height,
+                                0
+                              )
+                              .toFixed(1)}{" "}
+                            m²
+                          </p>
+                        </div>
+
+                        <div className="rounded-lg bg-gray-50 p-2">
+                          <span className="text-gray-500">
+                            Rooms
+                          </span>
+
+                          <p className="font-bold">
+                            {project.rooms.length}
+                          </p>
+                        </div>
+
+                      </div>
+
+                      <div className="mt-4 flex gap-2">
+
+                        <button
+                          onClick={() =>
+                            loadProject(
+                              project
+                            )
+                          }
+                          className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-xs font-semibold text-white hover:bg-green-700"
+                        >
+                          Load
+                        </button>
+
+                        <button
+                          onClick={() =>
+                            deleteSavedProject(
+                              project.id
+                            )
+                          }
+                          className="rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-600"
+                        >
+                          Delete
+                        </button>
+
+                      </div>
+
+                    </div>
+                  )
+                )}
+
+              </div>
+            )}
+
+          </div>
+        </section>
+      )}
+
+      {/* PROJECT DETAILS PANEL */}
+
+      {showProjectPanel && (
+        <section className="border-b bg-green-50">
+          <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+
+            <div className="rounded-2xl border border-green-100 bg-white p-5 shadow-sm">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
+                    Milestone 5
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-bold">
+                    Project information
+                  </h2>
+
+                  <p className="mt-1 text-sm text-gray-500">
+                    Give your building project real information before saving it.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() =>
+                    setShowProjectPanel(false)
+                  }
+                  className="rounded-lg border px-3 py-2 text-sm"
+                >
+                  Close
+                </button>
+
+              </div>
+
+              <div className="mt-5 grid gap-4 md:grid-cols-3">
+
+                <label className="block">
+                  <span className="text-sm font-semibold">
+                    Project name
+                  </span>
+
+                  <input
+                    type="text"
+                    value={projectName}
+                    onChange={(e) =>
+                      setProjectName(
+                        e.target.value
+                      )
+                    }
+                    placeholder="e.g. Mike's Family Home"
+                    className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-semibold">
+                    Location
+                  </span>
+
+                  <input
+                    type="text"
+                    value={projectLocation}
+                    onChange={(e) =>
+                      setProjectLocation(
+                        e.target.value
+                      )
+                    }
+                    placeholder="e.g. Nairobi, Kenya"
+                    className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
+                  />
+                </label>
+
+                <label className="block">
+                  <span className="text-sm font-semibold">
+                    House type
+                  </span>
+
+                  <select
+                    value={houseType}
+                    onChange={(e) =>
+                      setHouseType(
+                        e.target.value
+                      )
+                    }
+                    className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
+                  >
+                    {houseTypes.map(
+                      (type) => (
+                        <option
+                          key={type}
+                          value={type}
+                        >
+                          {type}
+                        </option>
+                      )
+                    )}
+                  </select>
+                </label>
+
+              </div>
+
+              <label className="mt-4 block">
+                <span className="text-sm font-semibold">
+                  Project notes
+                </span>
+
+                <textarea
+                  value={projectNotes}
+                  onChange={(e) =>
+                    setProjectNotes(
+                      e.target.value
+                    )
+                  }
+                  rows={3}
+                  placeholder="Add notes about the design, materials, contractor requirements, site information, etc."
+                  className="mt-1 w-full rounded-xl border px-3 py-2.5 outline-none focus:border-green-600"
+                />
+              </label>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-4">
+
+                <div className="rounded-xl bg-green-50 p-4">
+                  <p className="text-xs text-gray-500">
+                    Floor area
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold text-green-700">
+                    {totalArea.toFixed(1)} m²
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-xs text-gray-500">
+                    Rooms
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold">
+                    {rooms.length}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-xs text-gray-500">
+                    Walls
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold">
+                    {walls.length}
+                  </p>
+                </div>
+
+                <div className="rounded-xl bg-gray-50 p-4">
+                  <p className="text-xs text-gray-500">
+                    Estimated cost
+                  </p>
+
+                  <p className="mt-1 text-xl font-bold text-green-700">
+                    {money(grandTotal)}
+                  </p>
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+        </section>
+      )}
+
+      {/* MAIN */}
+
+      <section className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+
+        <div className="mb-6">
+
+          <p className="text-sm font-semibold uppercase tracking-wider text-green-600">
+            Home Designer
+          </p>
+
+          <h1 className="mt-1 text-3xl font-bold">
+            Build your floor plan
+          </h1>
+
+          <p className="mt-2 text-gray-600">
+            Design rooms, walls, doors and windows for your future home.
+          </p>
+
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr_300px]">
+
+          {/* LEFT PANEL */}
+
+          <aside className="rounded-2xl border bg-white p-5 shadow-sm">
+
+            <h2 className="font-semibold">
+              Rooms
+            </h2>
+
+            <div className="mt-4 space-y-2">
+
+              {roomTypes.map(
+                (room) => (
                   <button
                     key={room}
                     onClick={() =>
                       addRoom(room)
                     }
-                    className="group w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left text-sm font-semibold transition hover:border-green-400 hover:bg-green-50"
+                    className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
                   >
-                    <span className="mr-2 text-green-600">
-                      +
-                    </span>
-
-                    {room}
+                    + {room}
                   </button>
-                ))}
-              </div>
+                )
+              )}
+
             </div>
 
-            {/* WALLS */}
+            <div className="mt-7 border-t pt-5">
 
-            <div className="mt-7 border-t border-slate-100 pt-6">
-
-              <p className="mb-2 text-xs font-black uppercase tracking-wider text-blue-700">
+              <h2 className="font-semibold">
                 Walls
-              </p>
+              </h2>
 
-              <div className="space-y-2">
+              <div className="mt-4 space-y-2">
 
                 <button
                   onClick={() =>
-                    addWall("horizontal")
+                    addWall(
+                      "horizontal"
+                    )
                   }
-                  className="w-full rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-left text-sm font-semibold text-blue-800 transition hover:bg-blue-100"
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
                 >
-                  <span className="mr-2">
-                    ↔
-                  </span>
-                  Horizontal wall
+                  + Horizontal wall
                 </button>
 
                 <button
                   onClick={() =>
-                    addWall("vertical")
+                    addWall(
+                      "vertical"
+                    )
                   }
-                  className="w-full rounded-xl border border-blue-100 bg-blue-50 px-3 py-2.5 text-left text-sm font-semibold text-blue-800 transition hover:bg-blue-100"
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50"
                 >
-                  <span className="mr-2">
-                    ↕
-                  </span>
-                  Vertical wall
+                  + Vertical wall
                 </button>
 
               </div>
+
             </div>
 
-            {/* DOORS */}
+            <div className="mt-7 border-t pt-5">
 
-            <div className="mt-7 border-t border-slate-100 pt-6">
-
-              <p className="mb-2 text-xs font-black uppercase tracking-wider text-amber-700">
+              <h2 className="font-semibold">
                 Doors
-              </p>
+              </h2>
 
-              <div className="space-y-2">
+              <div className="mt-4 space-y-2">
 
                 <button
-                  disabled={walls.length === 0}
+                  disabled={
+                    walls.length === 0
+                  }
                   onClick={() => {
                     if (walls[0]) {
                       addDoor(
@@ -731,13 +1499,15 @@ export default function FloorplanDesigner() {
                       );
                     }
                   }}
-                  className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-left text-sm font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40"
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  🚪 Interior door
+                  + Interior door
                 </button>
 
                 <button
-                  disabled={walls.length === 0}
+                  disabled={
+                    walls.length === 0
+                  }
                   onClick={() => {
                     if (walls[0]) {
                       addDoor(
@@ -746,32 +1516,35 @@ export default function FloorplanDesigner() {
                       );
                     }
                   }}
-                  className="w-full rounded-xl border border-orange-200 bg-orange-50 px-3 py-2.5 text-left text-sm font-semibold text-orange-800 hover:bg-orange-100 disabled:opacity-40"
+                  className="w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  🚪 Exterior door
+                  + Exterior door
                 </button>
 
               </div>
+
             </div>
 
-            {/* WINDOWS */}
+            <div className="mt-7 border-t pt-5">
 
-            <div className="mt-7 border-t border-slate-100 pt-6">
-
-              <p className="mb-2 text-xs font-black uppercase tracking-wider text-sky-700">
+              <h2 className="font-semibold">
                 Windows
-              </p>
+              </h2>
 
               <button
-                disabled={walls.length === 0}
+                disabled={
+                  walls.length === 0
+                }
                 onClick={() => {
                   if (walls[0]) {
-                    addWindow(walls[0].id);
+                    addWindow(
+                      walls[0].id
+                    );
                   }
                 }}
-                className="w-full rounded-xl border border-sky-200 bg-sky-50 px-3 py-2.5 text-left text-sm font-semibold text-sky-800 hover:bg-sky-100 disabled:opacity-40"
+                className="mt-4 w-full rounded-xl border px-3 py-2.5 text-left text-sm font-medium hover:border-green-600 hover:bg-green-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                🪟 Add window
+                + Window
               </button>
 
             </div>
@@ -780,38 +1553,27 @@ export default function FloorplanDesigner() {
 
           {/* CANVAS */}
 
-          <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-lg">
+          <section className="overflow-hidden rounded-2xl border bg-white shadow-sm">
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-green-50 px-5 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b px-5 py-4">
 
               <div>
-                <h2 className="font-black text-slate-900">
+
+                <h2 className="font-semibold">
                   Floor plan canvas
                 </h2>
 
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-gray-500">
                   Select an element to edit it.
                 </p>
+
               </div>
 
-              <div className="flex flex-wrap gap-2 text-xs font-bold">
-
-                <span className="rounded-full bg-green-100 px-3 py-1.5 text-green-700">
-                  {rooms.length} rooms
-                </span>
-
-                <span className="rounded-full bg-blue-100 px-3 py-1.5 text-blue-700">
-                  {walls.length} walls
-                </span>
-
-                <span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-700">
-                  {doors.length} doors
-                </span>
-
-                <span className="rounded-full bg-sky-100 px-3 py-1.5 text-sky-700">
-                  {windows.length} windows
-                </span>
-
+              <div className="rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium">
+                {rooms.length} rooms ·{" "}
+                {walls.length} walls ·{" "}
+                {doors.length} doors ·{" "}
+                {windows.length} windows
               </div>
 
             </div>
@@ -819,371 +1581,437 @@ export default function FloorplanDesigner() {
             <div className="overflow-auto p-4">
 
               <div
-                className="relative min-h-[520px] min-w-[700px] overflow-visible rounded-2xl border-2 border-dashed border-green-200 bg-green-50/30"
+                className="relative min-h-[500px] min-w-[700px] overflow-visible rounded-xl border-2 border-dashed border-gray-300"
                 style={{
                   backgroundImage:
-                    "linear-gradient(#d1fae5 1px, transparent 1px), linear-gradient(90deg, #d1fae5 1px, transparent 1px)",
-                  backgroundSize: "20px 20px",
+                    "linear-gradient(#e5e7eb 1px, transparent 1px), linear-gradient(90deg, #e5e7eb 1px, transparent 1px)",
+                  backgroundSize:
+                    "20px 20px",
                 }}
               >
 
                 {/* ROOMS */}
 
-                {rooms.map((room) => {
-                  const isSelected =
-                    room.id === selectedId;
+                {rooms.map(
+                  (room) => {
+                    const isSelected =
+                      room.id ===
+                      selectedId;
 
-                  const roomWidth =
-                    room.width * 35;
+                    const roomWidth =
+                      room.width * 35;
 
-                  const roomHeight =
-                    room.height * 30;
+                    const roomHeight =
+                      room.height * 30;
 
-                  return (
-                    <div
-                      key={room.id}
-                      className="absolute"
-                      style={{
-                        left: room.x,
-                        top: room.y,
-                        width: roomWidth,
-                        height: roomHeight,
-                      }}
-                    >
-
-                      <button
-                        onClick={() =>
-                          selectRoom(room.id)
-                        }
-                        className={`absolute inset-0 flex flex-col items-center justify-center rounded-xl border-2 text-center transition ${
-                          isSelected
-                            ? "border-green-600 bg-green-200 shadow-xl"
-                            : "border-green-500 bg-green-50 shadow-md"
-                        }`}
-                      >
-
-                        <span className="text-sm font-black text-green-900">
-                          {room.name}
-                        </span>
-
-                        <span className="mt-1 rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold text-green-700">
-                          {room.width}m ×{" "}
-                          {room.height}m
-                        </span>
-
-                      </button>
-
+                    return (
                       <div
-                        className="absolute left-0 flex items-center justify-center"
+                        key={room.id}
+                        className="absolute"
                         style={{
-                          top:
-                            roomHeight + 7,
-                          width: roomWidth,
+                          left: room.x,
+                          top: room.y,
+                          width:
+                            roomWidth,
+                          height:
+                            roomHeight,
                         }}
                       >
-                        <div className="h-px w-full bg-green-600" />
 
-                        <span className="absolute rounded bg-white px-1 text-[10px] font-bold text-green-700 shadow">
-                          {room.width.toFixed(1)}m
-                        </span>
-                      </div>
+                        <button
+                          onClick={() =>
+                            selectRoom(
+                              room.id
+                            )
+                          }
+                          className={`absolute inset-0 flex flex-col items-center justify-center rounded-lg border-2 text-center ${
+                            isSelected
+                              ? "border-green-600 bg-green-100 shadow-lg"
+                              : "border-gray-500 bg-white"
+                          }`}
+                        >
 
-                      <div
-                        className="absolute top-0 flex items-center justify-center"
-                        style={{
-                          left:
-                            roomWidth + 7,
-                          height: roomHeight,
-                        }}
-                      >
-                        <div className="h-full w-px bg-green-600" />
+                          <span className="text-sm font-semibold">
+                            {room.name}
+                          </span>
 
-                        <span
-                          className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-bold text-green-700 shadow"
+                          <span className="mt-1 text-xs text-gray-500">
+                            {room.width}m ×{" "}
+                            {room.height}m
+                          </span>
+
+                        </button>
+
+                        <div
+                          className="absolute left-0 flex items-center justify-center"
                           style={{
-                            transform:
-                              "rotate(-90deg)",
+                            top:
+                              roomHeight +
+                              7,
+                            width:
+                              roomWidth,
                           }}
                         >
-                          {room.height.toFixed(1)}m
-                        </span>
-                      </div>
 
-                    </div>
-                  );
-                })}
+                          <div className="h-px w-full bg-gray-500" />
+
+                          <span className="absolute bg-white px-1 text-[10px] font-medium text-gray-600">
+                            {room.width.toFixed(
+                              1
+                            )}{" "}
+                            m
+                          </span>
+
+                        </div>
+
+                        <div
+                          className="absolute top-0 flex items-center justify-center"
+                          style={{
+                            left:
+                              roomWidth +
+                              7,
+                            height:
+                              roomHeight,
+                          }}
+                        >
+
+                          <div className="h-full w-px bg-gray-500" />
+
+                          <span
+                            className="absolute whitespace-nowrap bg-white px-1 text-[10px] font-medium text-gray-600"
+                            style={{
+                              transform:
+                                "rotate(-90deg)",
+                            }}
+                          >
+                            {room.height.toFixed(
+                              1
+                            )}{" "}
+                            m
+                          </span>
+
+                        </div>
+
+                      </div>
+                    );
+                  }
+                )}
 
                 {/* WALLS */}
 
-                {walls.map((wall) => {
-                  const isSelected =
-                    wall.id ===
-                    selectedWallId;
+                {walls.map(
+                  (wall) => {
+                    const isSelected =
+                      wall.id ===
+                      selectedWallId;
 
-                  const horizontal =
-                    wall.direction ===
-                    "horizontal";
+                    const horizontal =
+                      wall.direction ===
+                      "horizontal";
 
-                  return (
-                    <div
-                      key={wall.id}
-                      className="absolute"
-                      style={{
-                        left: wall.x,
-                        top: wall.y,
-                        width: horizontal
-                          ? wall.length * 35
-                          : 8,
-                        height: horizontal
-                          ? 8
-                          : wall.length * 35,
-                      }}
-                    >
-
-                      <button
-                        onClick={() =>
-                          selectWall(wall.id)
-                        }
-                        className={`absolute inset-0 z-10 rounded-sm ${
-                          isSelected
-                            ? "bg-blue-500 shadow-lg"
-                            : "bg-slate-800"
-                        }`}
-                      />
-
+                    return (
                       <div
-                        className="absolute z-20 flex items-center justify-center"
-                        style={
-                          horizontal
-                            ? {
-                                top: 14,
-                                left: 0,
-                                width:
-                                  wall.length *
-                                  35,
-                              }
-                            : {
-                                left: 14,
-                                top: 0,
-                                height:
-                                  wall.length *
-                                  35,
-                              }
-                        }
-                      >
-                        <div
-                          className={
+                        key={wall.id}
+                        className="absolute"
+                        style={{
+                          left: wall.x,
+                          top: wall.y,
+                          width:
                             horizontal
-                              ? "h-px w-full bg-blue-500"
-                              : "h-full w-px bg-blue-500"
+                              ? wall.length *
+                                35
+                              : 8,
+                          height:
+                            horizontal
+                              ? 8
+                              : wall.length *
+                                35,
+                        }}
+                      >
+
+                        <button
+                          onClick={() =>
+                            selectWall(
+                              wall.id
+                            )
                           }
+                          className={`absolute z-10 rounded-sm ${
+                            isSelected
+                              ? "bg-green-600 shadow-lg"
+                              : "bg-gray-800"
+                          }`}
+                          style={{
+                            inset: 0,
+                          }}
                         />
 
-                        <span
-                          className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-bold text-blue-700 shadow"
+                        <div
+                          className="absolute z-20 flex items-center justify-center"
                           style={
                             horizontal
-                              ? undefined
+                              ? {
+                                  top: 14,
+                                  left: 0,
+                                  width:
+                                    wall.length *
+                                    35,
+                                }
                               : {
-                                  transform:
-                                    "rotate(-90deg)",
+                                  left: 14,
+                                  top: 0,
+                                  height:
+                                    wall.length *
+                                    35,
                                 }
                           }
                         >
-                          {wall.length.toFixed(1)}m
-                        </span>
-                      </div>
 
-                    </div>
-                  );
-                })}
+                          <div
+                            className={
+                              horizontal
+                                ? "h-px w-full bg-gray-500"
+                                : "h-full w-px bg-gray-500"
+                            }
+                          />
+
+                          <span
+                            className="absolute whitespace-nowrap bg-white px-1 text-[10px] font-medium text-gray-600"
+                            style={
+                              horizontal
+                                ? undefined
+                                : {
+                                    transform:
+                                      "rotate(-90deg)",
+                                  }
+                            }
+                          >
+                            {wall.length.toFixed(
+                              1
+                            )}{" "}
+                            m
+                          </span>
+
+                        </div>
+
+                      </div>
+                    );
+                  }
+                )}
 
                 {/* DOORS */}
 
-                {doors.map((door) => {
-                  const wall =
-                    walls.find(
-                      (item) =>
-                        item.id ===
-                        door.wallId
-                    );
+                {doors.map(
+                  (door) => {
+                    const wall =
+                      walls.find(
+                        (item) =>
+                          item.id ===
+                          door.wallId
+                      );
 
-                  if (!wall) return null;
+                    if (!wall)
+                      return null;
 
-                  const horizontal =
-                    wall.direction ===
-                    "horizontal";
+                    const horizontal =
+                      wall.direction ===
+                      "horizontal";
 
-                  const isSelected =
-                    door.id ===
-                    selectedDoorId;
+                    const isSelected =
+                      door.id ===
+                      selectedDoorId;
 
-                  const position =
-                    door.position * 35;
+                    const position =
+                      door.position *
+                      35;
 
-                  return (
-                    <div
-                      key={door.id}
-                      className="absolute z-30"
-                      style={{
-                        left: horizontal
-                          ? wall.x +
-                            position
-                          : wall.x,
-                        top: horizontal
-                          ? wall.y
-                          : wall.y +
-                            position,
-                      }}
-                    >
-
-                      <button
-                        onClick={() =>
-                          selectDoor(door.id)
-                        }
-                        className={`rounded-sm border-2 border-white shadow ${
-                          isSelected
-                            ? "bg-red-500"
-                            : "bg-amber-500"
-                        }`}
+                    return (
+                      <div
+                        key={door.id}
+                        className="absolute z-30"
                         style={{
-                          width: horizontal
-                            ? door.width *
-                              35
-                            : 12,
-                          height: horizontal
-                            ? 12
-                            : door.width *
-                              35,
+                          left:
+                            horizontal
+                              ? wall.x +
+                                position
+                              : wall.x,
+                          top:
+                            horizontal
+                              ? wall.y
+                              : wall.y +
+                                position,
                         }}
-                      />
-
-                      <span
-                        className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-bold text-amber-700 shadow"
-                        style={
-                          horizontal
-                            ? {
-                                left:
-                                  (door.width *
-                                    35) /
-                                  2,
-                                top: 15,
-                                transform:
-                                  "translateX(-50%)",
-                              }
-                            : {
-                                left: 15,
-                                top:
-                                  (door.width *
-                                    35) /
-                                  2,
-                                transform:
-                                  "translateY(-50%) rotate(-90deg)",
-                              }
-                        }
                       >
-                        {door.width.toFixed(1)}m
-                      </span>
 
-                    </div>
-                  );
-                })}
+                        <button
+                          onClick={() =>
+                            selectDoor(
+                              door.id
+                            )
+                          }
+                          className={
+                            isSelected
+                              ? "bg-green-600"
+                              : "bg-amber-500"
+                          }
+                          style={{
+                            width:
+                              horizontal
+                                ? door.width *
+                                  35
+                                : 10,
+                            height:
+                              horizontal
+                                ? 10
+                                : door.width *
+                                  35,
+                          }}
+                        />
+
+                        <span
+                          className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-medium text-gray-700 shadow-sm"
+                          style={
+                            horizontal
+                              ? {
+                                  left:
+                                    (door.width *
+                                      35) /
+                                    2,
+                                  top: 13,
+                                  transform:
+                                    "translateX(-50%)",
+                                }
+                              : {
+                                  left: 13,
+                                  top:
+                                    (door.width *
+                                      35) /
+                                    2,
+                                  transform:
+                                    "translateY(-50%) rotate(-90deg)",
+                                }
+                          }
+                        >
+                          {door.width.toFixed(
+                            1
+                          )}{" "}
+                          m
+                        </span>
+
+                      </div>
+                    );
+                  }
+                )}
 
                 {/* WINDOWS */}
 
-                {windows.map((window) => {
-                  const wall =
-                    walls.find(
-                      (item) =>
-                        item.id ===
-                        window.wallId
-                    );
+                {windows.map(
+                  (window) => {
+                    const wall =
+                      walls.find(
+                        (item) =>
+                          item.id ===
+                          window.wallId
+                      );
 
-                  if (!wall) return null;
+                    if (!wall)
+                      return null;
 
-                  const horizontal =
-                    wall.direction ===
-                    "horizontal";
+                    const horizontal =
+                      wall.direction ===
+                      "horizontal";
 
-                  const isSelected =
-                    window.id ===
-                    selectedWindowId;
+                    const isSelected =
+                      window.id ===
+                      selectedWindowId;
 
-                  const position =
-                    window.position * 35;
+                    const position =
+                      window.position *
+                      35;
 
-                  return (
-                    <div
-                      key={window.id}
-                      className="absolute z-20"
-                      style={{
-                        left: horizontal
-                          ? wall.x +
-                            position
-                          : wall.x,
-                        top: horizontal
-                          ? wall.y
-                          : wall.y +
-                            position,
-                      }}
-                    >
-
-                      <button
-                        onClick={() =>
-                          selectWindow(
-                            window.id
-                          )
-                        }
-                        aria-label={
-                          window.name
-                        }
-                        className={`rounded-sm border-2 border-white shadow ${
-                          isSelected
-                            ? "bg-green-500"
-                            : "bg-sky-500"
-                        }`}
+                    return (
+                      <div
+                        key={window.id}
+                        className="absolute z-20"
                         style={{
-                          width: horizontal
-                            ? window.width *
-                              35
-                            : 10,
-                          height: horizontal
-                            ? 10
-                            : window.width *
-                              35,
+                          left:
+                            horizontal
+                              ? wall.x +
+                                position
+                              : wall.x,
+                          top:
+                            horizontal
+                              ? wall.y
+                              : wall.y +
+                                position,
                         }}
-                      />
-
-                      <span
-                        className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-bold text-sky-700 shadow"
-                        style={
-                          horizontal
-                            ? {
-                                left:
-                                  (window.width *
-                                    35) /
-                                  2,
-                                top: 13,
-                                transform:
-                                  "translateX(-50%)",
-                              }
-                            : {
-                                left: 13,
-                                top:
-                                  (window.width *
-                                    35) /
-                                  2,
-                                transform:
-                                  "translateY(-50%) rotate(-90deg)",
-                              }
-                        }
                       >
-                        {window.width.toFixed(1)}m
-                      </span>
 
-                    </div>
-                  );
-                })}
+                        <button
+                          onClick={() =>
+                            selectWindow(
+                              window.id
+                            )
+                          }
+                          aria-label={
+                            window.name
+                          }
+                          className={
+                            isSelected
+                              ? "bg-green-600"
+                              : "bg-blue-500"
+                          }
+                          style={{
+                            width:
+                              horizontal
+                                ? window.width *
+                                  35
+                                : 8,
+                            height:
+                              horizontal
+                                ? 8
+                                : window.width *
+                                  35,
+                          }}
+                        >
+                          <span className="sr-only">
+                            {window.name}
+                          </span>
+                        </button>
+
+                        <span
+                          className="absolute whitespace-nowrap rounded bg-white px-1 text-[10px] font-medium text-gray-700 shadow-sm"
+                          style={
+                            horizontal
+                              ? {
+                                  left:
+                                    (window.width *
+                                      35) /
+                                    2,
+                                  top: 11,
+                                  transform:
+                                    "translateX(-50%)",
+                                }
+                              : {
+                                  left: 11,
+                                  top:
+                                    (window.width *
+                                      35) /
+                                    2,
+                                  transform:
+                                    "translateY(-50%) rotate(-90deg)",
+                                }
+                          }
+                        >
+                          {window.width.toFixed(
+                            1
+                          )}{" "}
+                          m
+                        </span>
+
+                      </div>
+                    );
+                  }
+                )}
 
               </div>
             </div>
@@ -1195,42 +2023,30 @@ export default function FloorplanDesigner() {
 
             {/* PROPERTIES */}
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg">
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
 
-              <div className="flex items-center gap-3">
-
-                <div className="rounded-xl bg-purple-100 p-2 text-purple-700">
-                  ⚙️
-                </div>
-
-                <div>
-                  <h2 className="font-black">
-                    Properties
-                  </h2>
-
-                  <p className="text-xs text-slate-500">
-                    Edit the selected item.
-                  </p>
-                </div>
-
-              </div>
+              <h2 className="font-semibold">
+                Properties
+              </h2>
 
               {selectedRoom && (
                 <>
-                  <div className="mt-5 rounded-xl bg-green-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-green-600">
+                  <div className="mt-5">
+
+                    <p className="text-xs text-gray-500">
                       ROOM
                     </p>
 
-                    <p className="mt-1 font-black text-green-900">
+                    <p className="mt-1 font-semibold">
                       {selectedRoom.name}
                     </p>
+
                   </div>
 
                   <div className="mt-5 space-y-4">
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Width (m)
                       </span>
 
@@ -1248,12 +2064,12 @@ export default function FloorplanDesigner() {
                             )
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-green-200 bg-green-50/50 px-3 py-2.5 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Height (m)
                       </span>
 
@@ -1271,18 +2087,19 @@ export default function FloorplanDesigner() {
                             )
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-green-200 bg-green-50/50 px-3 py-2.5 outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
 
                   </div>
 
                   <div className="mt-5">
-                    <p className="mb-2 text-sm font-bold">
-                      Move room
+
+                    <p className="text-sm font-medium">
+                      Move
                     </p>
 
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="mt-2 grid grid-cols-3 gap-2">
 
                       <span />
 
@@ -1293,7 +2110,7 @@ export default function FloorplanDesigner() {
                             -20
                           )
                         }
-                        className="rounded-xl bg-slate-100 py-2 font-bold hover:bg-green-100"
+                        className="rounded-lg border py-2"
                       >
                         ↑
                       </button>
@@ -1307,7 +2124,7 @@ export default function FloorplanDesigner() {
                             0
                           )
                         }
-                        className="rounded-xl bg-slate-100 py-2 font-bold hover:bg-green-100"
+                        className="rounded-lg border py-2"
                       >
                         ←
                       </button>
@@ -1319,7 +2136,7 @@ export default function FloorplanDesigner() {
                             20
                           )
                         }
-                        className="rounded-xl bg-slate-100 py-2 font-bold hover:bg-green-100"
+                        className="rounded-lg border py-2"
                       >
                         ↓
                       </button>
@@ -1331,7 +2148,7 @@ export default function FloorplanDesigner() {
                             0
                           )
                         }
-                        className="rounded-xl bg-slate-100 py-2 font-bold hover:bg-green-100"
+                        className="rounded-lg border py-2"
                       >
                         →
                       </button>
@@ -1345,7 +2162,7 @@ export default function FloorplanDesigner() {
                         selectedRoom.id
                       )
                     }
-                    className="mt-5 w-full rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-100"
+                    className="mt-5 w-full rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600"
                   >
                     Delete room
                   </button>
@@ -1354,20 +2171,22 @@ export default function FloorplanDesigner() {
 
               {selectedWall && (
                 <>
-                  <div className="mt-5 rounded-xl bg-blue-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-blue-600">
+                  <div className="mt-5">
+
+                    <p className="text-xs text-gray-500">
                       WALL
                     </p>
 
-                    <p className="mt-1 font-black text-blue-900">
+                    <p className="mt-1 font-semibold">
                       {selectedWall.name}
                     </p>
+
                   </div>
 
                   <div className="mt-5 space-y-4">
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Length (m)
                       </span>
 
@@ -1385,12 +2204,12 @@ export default function FloorplanDesigner() {
                             )
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-blue-200 bg-blue-50/50 px-3 py-2.5"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Thickness (m)
                       </span>
 
@@ -1409,7 +2228,7 @@ export default function FloorplanDesigner() {
                             )
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-blue-200 bg-blue-50/50 px-3 py-2.5"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
 
@@ -1421,7 +2240,7 @@ export default function FloorplanDesigner() {
                         selectedWall.id
                       )
                     }
-                    className="mt-5 w-full rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600"
+                    className="mt-5 w-full rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600"
                   >
                     Delete wall
                   </button>
@@ -1430,20 +2249,22 @@ export default function FloorplanDesigner() {
 
               {selectedDoor && (
                 <>
-                  <div className="mt-5 rounded-xl bg-amber-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-amber-600">
+                  <div className="mt-5">
+
+                    <p className="text-xs text-gray-500">
                       DOOR
                     </p>
 
-                    <p className="mt-1 font-black text-amber-900">
+                    <p className="mt-1 font-semibold">
                       {selectedDoor.name}
                     </p>
+
                   </div>
 
                   <div className="mt-5 space-y-4">
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Type
                       </span>
 
@@ -1457,7 +2278,7 @@ export default function FloorplanDesigner() {
                             e.target.value
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2.5"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       >
                         <option value="Interior">
                           Interior
@@ -1470,7 +2291,7 @@ export default function FloorplanDesigner() {
                     </label>
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Width (m)
                       </span>
 
@@ -1489,12 +2310,12 @@ export default function FloorplanDesigner() {
                             )
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2.5"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       />
                     </label>
 
                     <label className="block">
-                      <span className="text-sm font-bold">
+                      <span className="text-sm font-medium">
                         Swing
                       </span>
 
@@ -1508,7 +2329,7 @@ export default function FloorplanDesigner() {
                             e.target.value
                           )
                         }
-                        className="mt-1 w-full rounded-xl border border-amber-200 bg-amber-50/50 px-3 py-2.5"
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
                       >
                         <option value="Left">
                           Left
@@ -1528,7 +2349,7 @@ export default function FloorplanDesigner() {
                         selectedDoor.id
                       )
                     }
-                    className="mt-5 w-full rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600"
+                    className="mt-5 w-full rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600"
                   >
                     Delete door
                   </button>
@@ -1537,38 +2358,47 @@ export default function FloorplanDesigner() {
 
               {selectedWindow && (
                 <>
-                  <div className="mt-5 rounded-xl bg-sky-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-sky-600">
+                  <div className="mt-5">
+
+                    <p className="text-xs text-gray-500">
                       WINDOW
                     </p>
 
-                    <p className="mt-1 font-black text-sky-900">
+                    <p className="mt-1 font-semibold">
                       {selectedWindow.name}
                     </p>
+
                   </div>
 
-                  <label className="mt-5 block">
-                    <span className="text-sm font-bold">
-                      Width (m)
-                    </span>
+                  <div className="mt-5">
 
-                    <input
-                      type="number"
-                      min="0.4"
-                      step="0.1"
-                      value={
-                        selectedWindow.width
-                      }
-                      onChange={(e) =>
-                        updateSelectedWindow(
-                          Number(
-                            e.target.value
+                    <label className="block">
+
+                      <span className="text-sm font-medium">
+                        Width (m)
+                      </span>
+
+                      <input
+                        type="number"
+                        min="0.4"
+                        step="0.1"
+                        value={
+                          selectedWindow.width
+                        }
+                        onChange={(e) =>
+                          updateSelectedWindow(
+                            "width",
+                            Number(
+                              e.target.value
+                            )
                           )
-                        )
-                      }
-                      className="mt-1 w-full rounded-xl border border-sky-200 bg-sky-50/50 px-3 py-2.5"
-                    />
-                  </label>
+                        }
+                        className="mt-1 w-full rounded-lg border px-3 py-2"
+                      />
+
+                    </label>
+
+                  </div>
 
                   <button
                     onClick={() =>
@@ -1576,7 +2406,7 @@ export default function FloorplanDesigner() {
                         selectedWindow.id
                       )
                     }
-                    className="mt-5 w-full rounded-xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600"
+                    className="mt-5 w-full rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600"
                   >
                     Delete window
                   </button>
@@ -1587,469 +2417,591 @@ export default function FloorplanDesigner() {
                 !selectedWall &&
                 !selectedDoor &&
                 !selectedWindow && (
-                  <div className="mt-5 rounded-2xl bg-slate-50 p-5 text-center">
-                    <div className="text-3xl">
-                      👆
-                    </div>
-
-                    <p className="mt-2 text-sm font-semibold text-slate-600">
-                      Select something on the
-                      floor plan to edit it.
-                    </p>
-                  </div>
+                  <p className="mt-5 text-sm text-gray-500">
+                    Select an element on the floor plan to edit it.
+                  </p>
                 )}
 
             </div>
 
             {/* MEASUREMENTS */}
 
-            <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-lg">
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
 
-              <div className="flex items-center gap-3">
-
-                <div className="rounded-xl bg-green-100 p-2">
-                  📐
-                </div>
-
-                <h2 className="font-black">
-                  Measurements
-                </h2>
-
-              </div>
+              <h2 className="font-semibold">
+                Measurements
+              </h2>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
 
-                <div className="rounded-2xl bg-gradient-to-br from-green-50 to-emerald-100 p-4">
-                  <p className="text-xs font-semibold text-green-700">
+                <div className="rounded-xl bg-green-50 p-4">
+
+                  <p className="text-xs text-gray-500">
                     Floor area
                   </p>
 
-                  <p className="mt-1 text-xl font-black text-green-800">
+                  <p className="mt-1 text-xl font-bold text-green-700">
                     {totalArea.toFixed(1)} m²
                   </p>
+
                 </div>
 
-                <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-                  <p className="text-xs font-semibold text-blue-700">
+                <div className="rounded-xl bg-gray-100 p-4">
+
+                  <p className="text-xs text-gray-500">
                     Wall length
                   </p>
 
-                  <p className="mt-1 text-xl font-black text-blue-800">
+                  <p className="mt-1 text-xl font-bold">
                     {totalWallLength.toFixed(1)} m
                   </p>
+
                 </div>
 
-                <div className="rounded-2xl bg-amber-50 p-4 text-center">
-                  <p className="text-xl font-black text-amber-700">
+                <div className="rounded-xl bg-gray-100 p-4 text-center">
+
+                  <p className="text-xl font-bold">
                     {doors.length}
                   </p>
 
-                  <p className="text-xs font-semibold text-amber-700">
+                  <p className="text-xs text-gray-500">
                     Doors
                   </p>
+
                 </div>
 
-                <div className="rounded-2xl bg-sky-50 p-4 text-center">
-                  <p className="text-xl font-black text-sky-700">
+                <div className="rounded-xl bg-gray-100 p-4 text-center">
+
+                  <p className="text-xl font-bold">
                     {windows.length}
                   </p>
 
-                  <p className="text-xs font-semibold text-sky-700">
+                  <p className="text-xs text-gray-500">
                     Windows
                   </p>
+
                 </div>
 
               </div>
+
             </div>
 
-            {/* COST CALCULATOR */}
+            {/* COST ESTIMATE */}
 
-            <div className="overflow-hidden rounded-3xl border border-green-200 bg-white shadow-xl">
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
 
-              <div className="bg-gradient-to-r from-green-700 to-emerald-600 p-5 text-white">
-
-                <div className="flex items-start justify-between">
-
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-wider text-green-100">
-                      Milestone 4
-                    </p>
-
-                    <h2 className="mt-1 text-2xl font-black">
-                      Building Cost
-                    </h2>
-
-                    <p className="text-sm text-green-100">
-                      Planning estimate
-                    </p>
-                  </div>
-
-                  <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-black">
-                    KSh
-                  </span>
-
-                </div>
-
-              </div>
-
-              <div className="p-5">
-
-                {/* MATERIALS */}
+              <div className="flex items-center justify-between">
 
                 <div>
-                  <h3 className="font-black">
-                    Material quantities
-                  </h3>
 
-                  <div className="mt-3 space-y-2">
-
-                    {[
-                      [
-                        "Cement",
-                        `${cementQuantity} bags`,
-                        "bg-gray-50",
-                      ],
-                      [
-                        "Blocks",
-                        blockQuantity.toLocaleString(),
-                        "bg-green-50",
-                      ],
-                      [
-                        "Sand",
-                        `${sandQuantity} m³`,
-                        "bg-amber-50",
-                      ],
-                      [
-                        "Ballast",
-                        `${ballastQuantity} m³`,
-                        "bg-orange-50",
-                      ],
-                      [
-                        "Steel",
-                        `${steelQuantity} kg`,
-                        "bg-blue-50",
-                      ],
-                      [
-                        "Roofing",
-                        `${roofingQuantity} m²`,
-                        "bg-purple-50",
-                      ],
-                      [
-                        "Flooring",
-                        `${flooringQuantity} m²`,
-                        "bg-pink-50",
-                      ],
-                      [
-                        "Paint",
-                        `${paintQuantity} units`,
-                        "bg-sky-50",
-                      ],
-                      [
-                        "Doors",
-                        `${doors.length}`,
-                        "bg-yellow-50",
-                      ],
-                      [
-                        "Windows",
-                        `${windows.length}`,
-                        "bg-cyan-50",
-                      ],
-                    ].map(
-                      ([name, quantity, bg]) => (
-                        <div
-                          key={name}
-                          className={`flex items-center justify-between rounded-xl ${bg} px-3 py-2.5 text-sm`}
-                        >
-                          <span className="font-semibold">
-                            {name}
-                          </span>
-
-                          <span className="font-black">
-                            {quantity}
-                          </span>
-                        </div>
-                      )
-                    )}
-
-                  </div>
-                </div>
-
-                {/* PRICES */}
-
-                <div className="mt-7 border-t border-slate-100 pt-6">
-
-                  <h3 className="font-black">
-                    Material prices
-                  </h3>
-
-                  <p className="mt-1 text-xs text-slate-500">
-                    Adjust these to current supplier
-                    prices.
+                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
+                    Milestone 4
                   </p>
 
-                  <div className="mt-4 space-y-3">
+                  <h2 className="mt-1 text-xl font-bold">
+                    Building cost estimate
+                  </h2>
 
-                    {(
-                      [
-                        ["Cement", "cement"],
-                        ["Block", "blocks"],
-                        ["Sand / m³", "sand"],
-                        ["Ballast / m³", "ballast"],
-                        ["Steel / kg", "steel"],
-                        ["Roofing / m²", "roofing"],
-                        ["Flooring / m²", "flooring"],
-                        ["Paint", "paint"],
-                        ["Door", "door"],
-                        ["Window", "window"],
-                      ] as [
-                        string,
-                        keyof MaterialPrice
-                      ][]
-                    ).map(
-                      ([label, key]) => (
-                        <label
-                          key={key}
-                          className="block"
-                        >
-                          <span className="text-xs font-bold text-slate-600">
-                            {label}
+                </div>
+
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
+                  KSh
+                </span>
+
+              </div>
+
+              {/* MATERIALS */}
+
+              <div className="mt-6">
+
+                <h3 className="font-semibold">
+                  Materials
+                </h3>
+
+                <div className="mt-3 space-y-2 text-sm">
+
+                  <div className="flex justify-between">
+                    <span>Cement</span>
+                    <span className="font-medium">
+                      {cementQuantity} bags
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Blocks</span>
+                    <span className="font-medium">
+                      {blockQuantity.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Sand</span>
+                    <span className="font-medium">
+                      {sandQuantity} m³
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Ballast</span>
+                    <span className="font-medium">
+                      {ballastQuantity} m³
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Steel</span>
+                    <span className="font-medium">
+                      {steelQuantity} kg
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Roofing</span>
+                    <span className="font-medium">
+                      {roofingQuantity} m²
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Flooring</span>
+                    <span className="font-medium">
+                      {flooringQuantity} m²
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Paint</span>
+                    <span className="font-medium">
+                      {paintQuantity} units
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Doors</span>
+                    <span className="font-medium">
+                      {doors.length}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>Windows</span>
+                    <span className="font-medium">
+                      {windows.length}
+                    </span>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* PRICES */}
+
+              <div className="mt-6 border-t pt-5">
+
+                <h3 className="font-semibold">
+                  Material prices
+                </h3>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Edit these prices to match current supplier prices.
+                </p>
+
+                <div className="mt-4 space-y-3">
+
+                  {(
+                    [
+                      ["Cement", "cement"],
+                      ["Block", "blocks"],
+                      ["Sand / m³", "sand"],
+                      ["Ballast / m³", "ballast"],
+                      ["Steel / kg", "steel"],
+                      ["Roofing / m²", "roofing"],
+                      ["Flooring / m²", "flooring"],
+                      ["Paint", "paint"],
+                      ["Door", "door"],
+                      ["Window", "window"],
+                    ] as [
+                      string,
+                      keyof MaterialPrice
+                    ][]
+                  ).map(
+                    ([label, key]) => (
+                      <label
+                        key={key}
+                        className="block"
+                      >
+
+                        <span className="text-xs font-medium text-gray-600">
+                          {label}
+                        </span>
+
+                        <div className="mt-1 flex">
+
+                          <span className="flex items-center rounded-l-lg border border-r-0 bg-gray-100 px-2 text-xs">
+                            KSh
                           </span>
 
-                          <div className="mt-1 flex">
-
-                            <span className="flex items-center rounded-l-xl border border-r-0 border-green-200 bg-green-50 px-3 text-xs font-black text-green-700">
-                              KSh
-                            </span>
-
-                            <input
-                              type="number"
-                              min="0"
-                              value={
-                                prices[key]
-                              }
-                              onChange={(e) =>
-                                updatePrice(
-                                  key,
-                                  Number(
-                                    e.target
-                                      .value
-                                  )
+                          <input
+                            type="number"
+                            min="0"
+                            value={
+                              prices[key]
+                            }
+                            onChange={(e) =>
+                              updatePrice(
+                                key,
+                                Number(
+                                  e.target.value
                                 )
-                              }
-                              className="w-full rounded-r-xl border border-green-200 px-3 py-2 text-sm outline-none focus:border-green-500"
-                            />
-
-                          </div>
-                        </label>
-                      )
-                    )}
-
-                  </div>
-                </div>
-
-                {/* ALLOWANCES */}
-
-                <div className="mt-7 border-t border-slate-100 pt-6">
-
-                  <h3 className="font-black">
-                    Project allowances
-                  </h3>
-
-                  <div className="mt-4 space-y-3">
-
-                    <label className="block">
-                      <span className="text-xs font-bold text-slate-600">
-                        Waste %
-                      </span>
-
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={wastePercent}
-                        onChange={(e) =>
-                          setWastePercent(
-                            Math.max(
-                              0,
-                              Number(
-                                e.target.value
                               )
-                            )
-                          )
-                        }
-                        className="mt-1 w-full rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5"
-                      />
-                    </label>
+                            }
+                            className="w-full rounded-r-lg border px-3 py-2 text-sm"
+                          />
 
-                    <label className="block">
-                      <span className="text-xs font-bold text-slate-600">
-                        Transport %
-                      </span>
+                        </div>
 
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={
-                          transportPercent
-                        }
-                        onChange={(e) =>
-                          setTransportPercent(
-                            Math.max(
-                              0,
-                              Number(
-                                e.target.value
-                              )
-                            )
-                          )
-                        }
-                        className="mt-1 w-full rounded-xl border border-blue-200 bg-blue-50 px-3 py-2.5"
-                      />
-                    </label>
-
-                    <label className="block">
-                      <span className="text-xs font-bold text-slate-600">
-                        Labour %
-                      </span>
-
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={labourPercent}
-                        onChange={(e) =>
-                          setLabourPercent(
-                            Math.max(
-                              0,
-                              Number(
-                                e.target.value
-                              )
-                            )
-                          )
-                        }
-                        className="mt-1 w-full rounded-xl border border-purple-200 bg-purple-50 px-3 py-2.5"
-                      />
-                    </label>
-
-                  </div>
-                </div>
-
-                {/* BREAKDOWN */}
-
-                <div className="mt-7 border-t border-slate-100 pt-6">
-
-                  <h3 className="font-black">
-                    Cost breakdown
-                  </h3>
-
-                  <div className="mt-4 space-y-2">
-
-                    <div className="flex justify-between rounded-xl bg-slate-50 px-3 py-3 text-sm">
-                      <span>
-                        Raw materials
-                      </span>
-
-                      <span className="font-black">
-                        {money(
-                          rawMaterialCost
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between rounded-xl bg-amber-50 px-3 py-3 text-sm">
-                      <span>
-                        Waste
-                      </span>
-
-                      <span className="font-black text-amber-700">
-                        {money(wasteCost)}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between rounded-xl bg-blue-50 px-3 py-3 text-sm">
-                      <span>
-                        Transport
-                      </span>
-
-                      <span className="font-black text-blue-700">
-                        {money(
-                          transportCost
-                        )}
-                      </span>
-                    </div>
-
-                    <div className="flex justify-between rounded-xl bg-purple-50 px-3 py-3 text-sm">
-                      <span>
-                        Labour
-                      </span>
-
-                      <span className="font-black text-purple-700">
-                        {money(
-                          labourCost
-                        )}
-                      </span>
-                    </div>
-
-                  </div>
-                </div>
-
-                {/* TOTAL */}
-
-                <div className="mt-7 overflow-hidden rounded-2xl bg-gradient-to-br from-green-700 via-emerald-600 to-teal-600 p-5 text-white shadow-lg">
-
-                  <p className="text-sm font-semibold text-green-100">
-                    Estimated construction cost
-                  </p>
-
-                  <p className="mt-1 text-3xl font-black sm:text-4xl">
-                    {money(grandTotal)}
-                  </p>
-
-                  <div className="mt-5 border-t border-white/20 pt-4">
-
-                    <div className="flex items-center justify-between text-sm">
-
-                      <span className="text-green-100">
-                        Cost per m²
-                      </span>
-
-                      <span className="font-black">
-                        {money(
-                          costPerSquareMeter
-                        )}
-                      </span>
-
-                    </div>
-
-                  </div>
+                      </label>
+                    )
+                  )}
 
                 </div>
 
-                {/* DISCLAIMER */}
+              </div>
 
-                <div className="mt-4 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
+              {/* ALLOWANCES */}
 
-                  <div className="flex gap-3">
+              <div className="mt-6 border-t pt-5">
 
-                    <span className="text-xl">
-                      ⚠️
+                <h3 className="font-semibold">
+                  Allowances
+                </h3>
+
+                <div className="mt-4 space-y-3">
+
+                  <label className="block">
+
+                    <span className="text-xs font-medium text-gray-600">
+                      Waste %
                     </span>
 
-                    <p className="text-xs leading-5 text-amber-900">
-                      This is a planning estimate,
-                      not a professional bill of
-                      quantities. Actual costs vary
-                      according to location, supplier
-                      prices, design specifications,
-                      transport distance, labour rates
-                      and site conditions.
-                    </p>
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={
+                        wastePercent
+                      }
+                      onChange={(e) =>
+                        setWastePercent(
+                          Math.max(
+                            0,
+                            Number(
+                              e.target.value
+                            )
+                          )
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+
+                  </label>
+
+                  <label className="block">
+
+                    <span className="text-xs font-medium text-gray-600">
+                      Transport %
+                    </span>
+
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={
+                        transportPercent
+                      }
+                      onChange={(e) =>
+                        setTransportPercent(
+                          Math.max(
+                            0,
+                            Number(
+                              e.target.value
+                            )
+                          )
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+
+                  </label>
+
+                  <label className="block">
+
+                    <span className="text-xs font-medium text-gray-600">
+                      Labour %
+                    </span>
+
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={
+                        labourPercent
+                      }
+                      onChange={(e) =>
+                        setLabourPercent(
+                          Math.max(
+                            0,
+                            Number(
+                              e.target.value
+                            )
+                          )
+                        )
+                      }
+                      className="mt-1 w-full rounded-lg border px-3 py-2 text-sm"
+                    />
+
+                  </label>
+
+                </div>
+
+              </div>
+
+              {/* BREAKDOWN */}
+
+              <div className="mt-6 border-t pt-5">
+
+                <h3 className="font-semibold">
+                  Cost breakdown
+                </h3>
+
+                <div className="mt-4 space-y-3 text-sm">
+
+                  <div className="flex justify-between">
+                    <span>
+                      Raw materials
+                    </span>
+
+                    <span className="font-medium">
+                      {money(
+                        rawMaterialCost
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>
+                      Waste
+                    </span>
+
+                    <span className="font-medium">
+                      {money(
+                        wasteCost
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>
+                      Transport
+                    </span>
+
+                    <span className="font-medium">
+                      {money(
+                        transportCost
+                      )}
+                    </span>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <span>
+                      Labour
+                    </span>
+
+                    <span className="font-medium">
+                      {money(
+                        labourCost
+                      )}
+                    </span>
+                  </div>
+
+                </div>
+
+              </div>
+
+              {/* TOTAL */}
+
+              <div className="mt-6 rounded-2xl bg-green-600 p-5 text-white">
+
+                <p className="text-sm text-green-100">
+                  Estimated construction cost
+                </p>
+
+                <p className="mt-1 text-3xl font-bold">
+                  {money(grandTotal)}
+                </p>
+
+                <div className="mt-4 border-t border-green-400 pt-3">
+
+                  <div className="flex justify-between text-sm">
+
+                    <span>
+                      Cost per m²
+                    </span>
+
+                    <span className="font-bold">
+                      {money(
+                        costPerSquareMeter
+                      )}
+                    </span>
 
                   </div>
 
                 </div>
 
               </div>
+
+              <div className="mt-4 rounded-xl bg-amber-50 p-3">
+
+                <p className="text-xs leading-5 text-amber-800">
+                  This is a planning estimate. Actual construction costs depend on location, supplier prices, design specifications, transport distance, labour rates and site conditions.
+                </p>
+
+              </div>
+
+            </div>
+
+            {/* MILESTONE 5 SUMMARY */}
+
+            <div className="rounded-2xl border bg-white p-5 shadow-sm">
+
+              <div className="flex items-center justify-between">
+
+                <div>
+
+                  <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
+                    Milestone 5
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-bold">
+                    Project summary
+                  </h2>
+
+                </div>
+
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                  PROJECT
+                </span>
+
+              </div>
+
+              <div className="mt-5 space-y-3 text-sm">
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Project
+                  </span>
+
+                  <span className="font-semibold text-right">
+                    {projectName}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Location
+                  </span>
+
+                  <span className="font-semibold text-right">
+                    {projectLocation}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    House type
+                  </span>
+
+                  <span className="font-semibold">
+                    {houseType}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Floor area
+                  </span>
+
+                  <span className="font-semibold">
+                    {totalArea.toFixed(1)} m²
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Rooms
+                  </span>
+
+                  <span className="font-semibold">
+                    {rooms.length}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Walls
+                  </span>
+
+                  <span className="font-semibold">
+                    {walls.length}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Doors
+                  </span>
+
+                  <span className="font-semibold">
+                    {doors.length}
+                  </span>
+                </div>
+
+                <div className="flex justify-between border-b pb-3">
+                  <span className="text-gray-500">
+                    Windows
+                  </span>
+
+                  <span className="font-semibold">
+                    {windows.length}
+                  </span>
+                </div>
+
+              </div>
+
+              <div className="mt-5 rounded-xl bg-green-50 p-4">
+
+                <p className="text-xs font-semibold uppercase tracking-wider text-green-600">
+                  Estimated project cost
+                </p>
+
+                <p className="mt-1 text-2xl font-bold text-green-700">
+                  {money(grandTotal)}
+                </p>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  {money(
+                    costPerSquareMeter
+                  )} per m²
+                </p>
+
+              </div>
+
+              <button
+                onClick={saveProject}
+                className="mt-4 w-full rounded-xl bg-green-600 px-4 py-3 text-sm font-bold text-white hover:bg-green-700"
+              >
+                Save this project
+              </button>
 
             </div>
 
@@ -2058,24 +3010,29 @@ export default function FloorplanDesigner() {
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* PRINT STYLES */}
 
-      <footer className="border-t border-green-100 bg-white py-8">
-        <div className="mx-auto max-w-7xl px-4 text-center">
+      <style jsx global>{`
+        @media print {
+          header,
+          button,
+          aside:first-child {
+            display: none !important;
+          }
 
-          <p className="text-lg font-black">
-            You
-            <span className="text-green-600">
-              Build
-            </span>
-          </p>
+          body {
+            background: white !important;
+          }
 
-          <p className="mt-1 text-xs text-slate-500">
-            Design smarter. Build better.
-          </p>
+          main {
+            background: white !important;
+          }
 
-        </div>
-      </footer>
+          section {
+            break-inside: avoid;
+          }
+        }
+      `}</style>
 
     </main>
   );
