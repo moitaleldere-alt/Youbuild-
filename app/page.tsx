@@ -1,3 +1,5 @@
+import ProjectManager from "./components/projectManager";
+
 export default function Home() {
   return (
     <main className="min-h-screen bg-white text-gray-900">
@@ -49,7 +51,10 @@ export default function Home() {
       {/* Services */}
       <section className="mx-auto max-w-7xl px-6 py-16">
         <div className="mb-10">
-          <h2 className="text-3xl font-bold">Everything you need to build</h2>
+          <h2 className="text-3xl font-bold">
+            Everything you need to build
+          </h2>
+
           <p className="mt-2 text-gray-600">
             One platform for the entire property journey.
           </p>
@@ -85,6 +90,13 @@ export default function Home() {
             title="Property Marketplace"
             description="Explore properties and connect with buyers, sellers and landlords."
           />
+        </div>
+      </section>
+
+      {/* Milestone 7 — Project Management */}
+      <section className="bg-gray-50 px-6 py-16">
+        <div className="mx-auto max-w-7xl">
+          <ProjectManager />
         </div>
       </section>
 
@@ -127,7 +139,9 @@ function Feature({
     <div className="rounded-2xl border border-gray-200 p-6 transition hover:-translate-y-1 hover:shadow-lg">
       <h3 className="text-xl font-semibold">{title}</h3>
 
-      <p className="mt-3 leading-7 text-gray-600">{description}</p>
+      <p className="mt-3 leading-7 text-gray-600">
+        {description}
+      </p>
 
       <button className="mt-6 text-sm font-semibold text-green-600 hover:text-green-700">
         Explore →
